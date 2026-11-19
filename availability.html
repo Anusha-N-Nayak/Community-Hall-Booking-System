@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Hall Availability</title>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f2f5f9;
+        }
+
+        header {
+            background: #142d4e;
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        header a {
+            color: white;
+            text-decoration: none;
+        }
+
+        .container {
+            max-width: 850px;
+            background: white;
+            margin: 35px auto;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #ddd;
+        }
+
+        h1 {
+            text-align: center;
+            color: #142d4e;
+            margin-bottom: 15px;
+        }
+
+        .hall-name {
+            text-align: center;
+            color: #e67e22;
+            font-size: 20px;
+            margin-bottom: 25px;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-header button {
+            background: #1e6091;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #monthYear {
+            font-size: 22px;
+            color: #142d4e;
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .day-name {
+            text-align: center;
+            font-weight: bold;
+            padding: 12px 2px;
+            color: #142d4e;
+        }
+
+        .date {
+            padding: 16px 5px;
+            text-align: center;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .empty {
+            background: transparent;
+        }
+
+        .available {
+            background: #b8e6c5;
+            color: #176b35;
+        }
+
+        .booked {
+            background: #f5b5b5;
+            color: #a00000;
+            cursor: not-allowed;
+        }
+
+        .selected {
+            background: #2878d0;
+            color: white;
+        }
+
+        .past {
+            background: #e0e0e0;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 25px 0;
+        }
+
+        .legend span {
+            padding: 9px 12px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .selected-info {
+            text-align: center;
+            margin: 20px;
+            color: #142d4e;
+            font-size: 17px;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+
+        .buttons button {
+            padding: 13px 22px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .confirm {
+            background: #239b56;
+        }
+
+        .back {
+            background: #555;
+        }
+
+        footer {
+            background: #142d4e;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+        }
+
+        @media(max-width: 600px) {
+
+            .container {
+                margin: 15px;
+                padding: 15px;
+            }
+
+            .date {
+                padding: 13px 2px;
+                font-size: 13px;
+            }
+
+            .calendar {
+                gap: 4px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <header>
+
+        <h2>Community Hall Booking</h2>
+
+        <a href="dashboard.html">Home</a>
+
+    </header>
+
+
+    <div class="container">
+
+        <h1>Check Hall Availability</h1>
+
+        <div class="hall-name" id="hallName">
+            Community Hall
+        </div>
+
+
+        <div class="calendar-header">
+
+            <button onclick="changeMonth(-1)">
+                Previous
+            </button>
+
+            <h2 id="monthYear"></h2>
+
+            <button onclick="changeMonth(1)">
+                Next
+            </button>
+
+        </div>
+
+
+        <div class="calendar" id="calendar">
+
+        </div>
+
+
+        <div class="legend">
+
+            <span class="available">Available</span>
+
+            <span class="booked">Booked</span>
+
+            <span class="selected">Selected</span>
+
+        </div>
+
+
+        <div class="selected-info">
+
+            <p id="selectedDate">
+                Please select an available date.
+            </p>
+
+        </div>
+
+
+        <div class="buttons">
+
+            <button class="confirm" onclick="confirmDate()">
+                Confirm Date
+            </button>
+
+            <button class="back" onclick="goBack()">
+                Back to Hall Details
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <footer>
+
+        <p>
+            © 2026 Community Hall Booking and Management System
+        </p>
+
+    </footer>
+
+
+    <script>
+
+        // Get selected hall
+
+        const params = new URLSearchParams(window.location.search);
+
+        const hall = params.get("hall");
+
+        document.getElementById("hallName").innerText =
+            hall || "Community Hall";
+
+
+        // Current date
+
+        let today = new Date();
+
+        let currentMonth = today.getMonth();
+
+        let currentYear = today.getFullYear();
+
+        let selectedDay = null;
+
+
+        // Sample booked dates
+
+        const bookedDates = {
+
+            "Royal Palace Community Hall": {
+                "2026-11-13": true,
+                "2026-11-15": true,
+                "2026-11-20": true
+            },
+
+            "Grand Celebration Hall": {
+                "2026-11-12": true,
+                "2026-11-18": true
+            },
+
+            "Green Garden Community Hall": {
+                "2026-11-14": true,
+                "2026-11-21": true
+            }
+
+        };
+
+
+        // Display calendar
+
+        function generateCalendar() {
+
+            const calendar =
+                document.getElementById("calendar");
+
+            calendar.innerHTML = "";
+
+            const monthNames = [
+                "January", "February", "March",
+                "April", "May", "June",
+                "July", "August", "September",
+                "October", "November", "December"
+            ];
+
+            document.getElementById("monthYear").innerText =
+                monthNames[currentMonth] + " " + currentYear;
+
+
+            const firstDay =
+                new Date(currentYear, currentMonth, 1).getDay();
+
+            const totalDays =
+                new Date(currentYear, currentMonth + 1, 0).getDate();
+
+
+            const weekdays = [
+                "Sun", "Mon", "Tue", "Wed",
+                "Thu", "Fri", "Sat"
+            ];
+
+
+            weekdays.forEach(function(day) {
+
+                let div = document.createElement("div");
+
+                div.className = "day-name";
+
+                div.innerText = day;
+
+                calendar.appendChild(div);
+
+            });
+
+
+            // Empty spaces
+
+            for (let i = 0; i < firstDay; i++) {
+
+                let empty = document.createElement("div");
+
+                calendar.appendChild(empty);
+
+            }
+
+
+            // Dates
+
+            for (let day = 1; day <= totalDays; day++) {
+
+                let date = document.createElement("div");
+
+                date.className = "date";
+
+                date.innerText = day;
+
+
+                let dateKey =
+                    currentYear + "-" +
+                    String(currentMonth + 1).padStart(2, "0") +
+                    "-" +
+                    String(day).padStart(2, "0");
+
+
+                let isPast =
+                    new Date(currentYear, currentMonth, day) <
+                    new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+
+                let isBooked =
+                    bookedDates[hall] &&
+                    bookedDates[hall][dateKey];
+
+
+                if (isPast) {
+
+                    date.classList.add("past");
+
+                }
+
+                else if (isBooked) {
+
+                    date.classList.add("booked");
+
+                }
+
+                else {
+
+                    date.classList.add("available");
+
+                }
+
+
+                if (
+                    selectedDay === dateKey &&
+                    !isPast &&
+                    !isBooked
+                ) {
+
+                    date.classList.add("selected");
+
+                }
+
+
+                if (!isPast && !isBooked) {
+
+                    date.onclick = function() {
+
+                        selectedDay = dateKey;
+
+                        document.getElementById("selectedDate").innerText =
+                            "Selected Date: " + dateKey;
+
+                        generateCalendar();
+
+                    };
+
+                }
+
+
+                calendar.appendChild(date);
+
+            }
+
+        }
+
+
+        // Change month
+
+        function changeMonth(value) {
+
+            currentMonth += value;
+
+            if (currentMonth < 0) {
+
+                currentMonth = 11;
+
+                currentYear--;
+
+            }
+
+            if (currentMonth > 11) {
+
+                currentMonth = 0;
+
+                currentYear++;
+
+            }
+
+            generateCalendar();
+
+        }
+
+
+        // Confirm date
+
+        function confirmDate() {
+
+            if (selectedDay === null) {
+
+                alert("Please select an available date.");
+
+                return;
+
+            }
+
+            localStorage.setItem("selectedHall", hall);
+
+            localStorage.setItem("bookingDate", selectedDay);
+
+            alert("Date selected successfully!");
+
+            window.location.href =
+                "booking.html?hall=" +
+                encodeURIComponent(hall) +
+                "&date=" +
+                encodeURIComponent(selectedDay);
+
+        }
+
+
+        // Back button
+
+        function goBack() {
+
+            window.location.href =
+                "halldetails.html?hall=" +
+                encodeURIComponent(hall);
+
+        }
+
+
+        generateCalendar();
+
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Hall Details</title>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f2f5f9;
+        }
+
+        /* Header */
+
+        header {
+            background: #142d4e;
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header a {
+            color: white;
+            text-decoration: none;
+        }
+
+        /* Main Container */
+
+        .container {
+            max-width: 1000px;
+            margin: 35px auto;
+            padding: 25px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #ddd;
+        }
+
+        .container h1 {
+            color: #142d4e;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        /* Hall Image */
+
+        .hall-image {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        /* Hall Information */
+
+        .details {
+            padding: 25px 10px;
+        }
+
+        .details h2 {
+            color: #142d4e;
+            margin-bottom: 20px;
+        }
+
+        .details p {
+            font-size: 16px;
+            color: #444;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .details strong {
+            color: #142d4e;
+        }
+
+        .facilities {
+            margin-top: 20px;
+        }
+
+        .facilities h3 {
+            color: #142d4e;
+            margin-bottom: 15px;
+        }
+
+        .facilities ul {
+            padding-left: 25px;
+        }
+
+        .facilities li {
+            margin-bottom: 10px;
+            color: #444;
+        }
+
+        /* Buttons */
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .buttons button {
+            flex: 1;
+            min-width: 150px;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .book {
+            background: #e67e22;
+        }
+
+        .availability {
+            background: #1e6091;
+        }
+
+        .feedback {
+            background: #239b56;
+        }
+
+        .back {
+            background: #555;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        /* Footer */
+
+        footer {
+            background: #142d4e;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+        }
+
+        @media(max-width: 600px) {
+
+            header {
+                padding: 18px;
+            }
+
+            .container {
+                margin: 15px;
+                padding: 15px;
+            }
+
+            .hall-image {
+                height: 230px;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Header -->
+
+    <header>
+
+        <h2>Community Hall Booking</h2>
+
+        <a href="dashboard.html">Home</a>
+
+    </header>
+
+
+    <!-- Hall Details -->
+
+    <div class="container">
+
+        <h1>Community Hall Details</h1>
+
+        <img
+            id="hallImage"
+            class="hall-image"
+            src=""
+            alt="Community Hall">
+
+        <div class="details">
+
+            <h2 id="hallName"></h2>
+
+            <p>
+                <strong>Location:</strong>
+                <span id="location"></span>
+            </p>
+
+            <p>
+                <strong>Capacity:</strong>
+                <span id="capacity"></span>
+            </p>
+
+            <p>
+                <strong>Price:</strong>
+                <span id="price"></span>
+            </p>
+
+            <p>
+                <strong>About:</strong>
+                <span id="about"></span>
+            </p>
+
+            <div class="facilities">
+
+                <h3>Facilities Available</h3>
+
+                <ul id="facilitiesList"></ul>
+
+            </div>
+
+
+            <!-- Buttons -->
+
+            <div class="buttons">
+
+                <button class="book" onclick="bookHall()">
+                    Book Here
+                </button>
+
+                <button class="availability"
+                    onclick="checkAvailability()">
+                    Check Availability
+                </button>
+
+                <button class="feedback"
+                    onclick="viewFeedback()">
+                    View Feedback
+                </button>
+
+                <button class="back"
+                    onclick="location.href='dashboard.html'">
+                    Back to Dashboard
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Footer -->
+
+    <footer>
+
+        <p>
+            © 2026 Community Hall Booking and Management System
+        </p>
+
+    </footer>
+
+
+    <!-- JavaScript -->
+
+    <script>
+
+        // Hall Information
+
+        const halls = {
+
+            "Royal Palace Community Hall": {
+
+                location: "Puttur, Karnataka",
+
+                capacity: "500 People",
+
+                price: "₹25,000 per day",
+
+                image:
+                "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=900",
+
+                about:
+                "A spacious community hall suitable for weddings, receptions and large family functions.",
+
+                facilities: [
+                    "Air Conditioning",
+                    "Stage",
+                    "Dining Hall",
+                    "Parking",
+                    "Chairs",
+                    "Generator"
+                ]
+
+            },
+
+
+            "Grand Celebration Hall": {
+
+                location: "Mangaluru, Karnataka",
+
+                capacity: "300 People",
+
+                price: "₹18,000 per day",
+
+                image:
+                "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=900",
+
+                about:
+                "A modern function hall suitable for birthday parties, engagements and family celebrations.",
+
+                facilities: [
+                    "Parking",
+                    "Catering Area",
+                    "Fans",
+                    "Stage",
+                    "Dining Facilities"
+                ]
+
+            },
+
+
+            "Green Garden Community Hall": {
+
+                location: "Sullia, Karnataka",
+
+                capacity: "200 People",
+
+                price: "₹12,000 per day",
+
+                image:
+                "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=900",
+
+                about:
+                "A beautiful community hall with a garden area suitable for small weddings, meetings and family celebrations.",
+
+                facilities: [
+                    "Garden Area",
+                    "Parking",
+                    "Dining Hall",
+                    "Chairs",
+                    "Lighting"
+                ]
+
+            }
+
+        };
+
+
+        // Get selected hall from Dashboard
+
+        const params = new URLSearchParams(window.location.search);
+
+        const selectedHall = params.get("hall");
+        console.log("Selected Hall:", selectedHall);
+console.log("Available Halls:", Object.keys(halls));
+
+        const hall = halls[selectedHall];
+
+
+        // Display Hall Information
+
+        if (hall) {
+
+            document.getElementById("hallName").innerText =
+                selectedHall;
+
+            document.getElementById("location").innerText =
+                hall.location;
+
+            document.getElementById("capacity").innerText =
+                hall.capacity;
+
+            document.getElementById("price").innerText =
+                hall.price;
+
+            document.getElementById("about").innerText =
+                hall.about;
+
+            document.getElementById("hallImage").src =
+                hall.image;
+
+            document.getElementById("hallImage").alt =
+                selectedHall;
+
+            const list =
+                document.getElementById("facilitiesList");
+
+            hall.facilities.forEach(function(item) {
+
+                let li = document.createElement("li");
+
+                li.innerText = item;
+
+                list.appendChild(li);
+
+            });
+
+        } else {
+
+            document.querySelector(".container").innerHTML =
+                "<h2>Hall not found!</h2>" +
+                "<p>Please return to the dashboard and select a hall.</p>" +
+                "<br><a href='dashboard.html'>Back to Dashboard</a>";
+
+        }
+
+
+        // Book Hall
+
+        function bookHall() {
+
+    const hallIds = {
+        "Royal Palace Community Hall": 1,
+        "Royal Community Hall": 1,
+        "Green Garden Community Hall": 2,
+        "Grand Celebration Hall": 3
+    };
+
+    if (hall) {
+
+        const hallId = hallIds[selectedHall];
+
+        localStorage.setItem("selectedHall", selectedHall);
+        localStorage.setItem("selectedHallId", hallId);
+
+        window.location.href =
+            "booking.html?hall=" +
+            encodeURIComponent(selectedHall) +
+            "&hall_id=" + hallId;
+
+    }
+
+}
+
+
+        // Check Availability
+
+        function checkAvailability() {
+
+            if (hall) {
+
+                window.location.href =
+                "availability.html?hall=" +
+                encodeURIComponent(selectedHall);
+
+            }
+
+        }
+
+
+        // View Feedback
+
+        function viewFeedback() {
+
+            if (hall) {
+
+                window.location.href =
+                "view_feedback.php?hall=" +
+                encodeURIComponent(selectedHall);
+
+            }
+
+        }
+
+    </script>
+
+</body>
+
+</html>

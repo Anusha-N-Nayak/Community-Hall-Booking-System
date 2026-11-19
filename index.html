@@ -1,0 +1,257 @@
+<<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Community Hall Booking System</title>
+
+<style>
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+    }
+
+    body {
+        background: #f4f6f9;
+        color: #333;
+    }
+
+    /* Navigation Bar */
+
+    header {
+        background: #243b55;
+        color: white;
+        padding: 20px 50px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    header h2 {
+        font-size: 24px;
+    }
+
+    nav a {
+        color: white;
+        text-decoration: none;
+        margin-left: 25px;
+        font-size: 16px;
+    }
+
+    nav a:hover {
+        color: #ffb703;
+    }
+
+    /* Welcome Section */
+
+    .hero {
+        min-height: 500px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 30px;
+
+        background: linear-gradient(
+            135deg,
+            #243b55,
+            #517fa4
+        );
+
+        color: white;
+    }
+
+    .hero h1 {
+        font-size: 42px;
+        margin-bottom: 20px;
+    }
+
+    .hero p {
+        font-size: 19px;
+        margin-bottom: 30px;
+    }
+
+    /* Login Button */
+
+    .buttons a {
+        display: inline-block;
+        padding: 13px 35px;
+        margin: 10px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 17px;
+        font-weight: bold;
+    }
+
+    .login {
+        background: white;
+        color: #243b55;
+    }
+
+    .login:hover {
+        background: #ffb703;
+        color: #222;
+    }
+
+    /* Features Section */
+
+    .features {
+        padding: 50px 20px;
+        text-align: center;
+    }
+
+    .features h2 {
+        font-size: 30px;
+        margin-bottom: 30px;
+        color: #243b55;
+    }
+
+    .container {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 25px;
+    }
+
+    .card {
+        background: white;
+        padding: 30px;
+        width: 250px;
+        border-radius: 10px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+        transition: transform 0.3s;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+    }
+
+    .card h3 {
+        color: #243b55;
+        margin-bottom: 15px;
+    }
+
+    .card p {
+        line-height: 1.6;
+    }
+
+    /* Footer */
+
+    footer {
+        background: #243b55;
+        color: white;
+        text-align: center;
+        padding: 20px;
+        margin-top: 30px;
+    }
+
+    /* Responsive Design */
+
+    @media (max-width: 600px) {
+
+        header {
+            padding: 20px;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .hero h1 {
+            font-size: 30px;
+        }
+
+        .hero p {
+            font-size: 16px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 350px;
+        }
+
+    }
+
+</style>
+
+</head><body><!-- Navigation Bar -->
+
+<header>
+
+    <h2>Community Hall Booking</h2>
+
+    <nav>
+    <a href="index.html">Home</a>
+    <a href="login/login.html">Customer Login</a>
+    <a href="owner_login.html">Owner Login</a>
+</nav>
+
+</header>
+
+
+<!-- Welcome Section -->
+
+<section class="hero">
+
+    <h1>Welcome to Community Hall Booking System</h1>
+
+    <p>Find the Perfect Hall for Your Special Occasion!</p>
+
+    
+</section>
+
+
+<!-- Features Section -->
+
+<section class="features">
+
+    <h2>Our Services</h2>
+
+    <div class="container">
+
+        <div class="card">
+
+            <h3>Easy Booking</h3>
+
+            <p>
+                Book your preferred community hall easily
+                and conveniently.
+            </p>
+
+        </div>
+
+        <div class="card">
+
+            <h3>Check Availability</h3>
+
+            <p>
+                Check hall availability before confirming
+                your booking.
+            </p>
+
+        </div>
+
+        <div class="card">
+
+            <h3>Hall Facilities</h3>
+
+            <p>
+                Explore hall facilities, capacity, parking
+                and other services.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- Footer -->
+
+<footer>
+
+    <p>© 2026 Community Hall Booking and Management System</p>
+
+</footer>
+
+</body></html>

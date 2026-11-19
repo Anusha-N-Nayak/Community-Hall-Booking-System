@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hall Booking Form</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f2f4f8;
+            padding: 30px 15px;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #243b64;
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 11px;
+            margin-top: 7px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        input[readonly] {
+            background: #eeeeee;
+        }
+
+        button {
+            width: 100%;
+            padding: 13px;
+            margin-top: 20px;
+            border: none;
+            border-radius: 6px;
+            background: #243b64;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #162746;
+        }
+
+        .cancel {
+            background: #777;
+            margin-top: 10px;
+        }
+
+        .amount {
+            color: green;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>Hall Booking Form</h2>
+
+    <form id="bookingForm" action="book_hall.php" method="POST">
+
+    <input type="hidden" name="hall_name" id="hiddenHallName">
+    <input type="hidden" name="start_time" id="startTime">
+    <input type="hidden" name="end_time" id="endTime">
+    <input type="hidden" name="total_amount" id="totalAmount">
+    <input type="hidden" name="hall_id" id="hallId">
+
+    <label>Hall Name</label>
+    <input type="text" id="hallName" readonly>
+
+    
+
+        
+
+        <label>Booking Date</label>
+        <input type="date" id="bookingDate" name="event_date" required>
+
+        <label>Customer Name</label>
+        <input type="text" id="customerName" required>
+
+        <label>Mobile Number</label>
+        <input type="tel" id="mobile" pattern="[0-9]{10}"
+               maxlength="10" placeholder="Enter 10-digit number" required>
+
+        <label>Email Address</label>
+        <input type="email" id="email" required>
+
+        <label>Event Type</label>
+        <select id="eventType" name="event_name" required>
+            <option value="">Select Event</option>
+            <option>Marriage</option>
+            <option>Birthday Party</option>
+            <option>Engagement</option>
+            <option>Reception</option>
+            <option>Meeting</option>
+            <option>Other</option>
+        </select>
+
+        <label>Number of Guests</label>
+        <input type="number" id="guests" name="guest_count" min="1" required>
+
+        <label>Event Time</label>
+        <select id="eventTime" required>
+    <option value="">Select Time</option>
+    <option value="morning">Morning (8 AM - 12 PM)</option>
+    <option value="afternoon">Afternoon (12 PM - 4 PM)</option>
+    <option value="evening">Evening (4 PM - 10 PM)</option>
+    <option value="full_day">Full Day (8 AM - 10 PM)</option>
+</select>
+            
+
+        <label>Additional Requirements</label>
+        <textarea id="requirements" rows="4"
+                  placeholder="Enter any additional requirements"></textarea>
+
+        <label>Booking Amount</label>
+        <input type="text" id="amount" class="amount" readonly>
+
+        <button type="submit">Submit Booking</button>
+
+        <button type="button" class="cancel"
+                onclick="history.back()">Cancel</button>
+
+    </form>
+
+</div>
+
+<script>
+
+// Hall prices
+const hallPrices = {
+    "Royal Community Hall": 25000,
+    "Royal Palace Community Hall": 25000,
+    "Grand Celebration Hall": 18000,
+    "Green Garden Community Hall": 12000
+};
+
+// Database Hall IDs
+const hallIds = {
+    "Royal Community Hall": 1,
+    "Royal Palace Community Hall": 1,
+    "Grand Celebration Hall": 3,
+    "Green Garden Community Hall": 2
+};
+
+// Get selected hall
+const params = new URLSearchParams(window.location.search);
+
+const hall = params.get("hall") || localStorage.getItem("selectedHall");
+
+const receivedId = Number(params.get("hall_id"));
+
+const hallId = hallIds[hall];
+
+// Get date
+const date = params.get("date") || localStorage.getItem("bookingDate");
+
+// Validate hall
+if (!hall || !hallId) {
+
+    alert("Please select a valid hall.");
+
+    window.location.href = "dashboard.php";
+
+} else {
+
+    document.getElementById("hallName").value = hall;
+
+    document.getElementById("hiddenHallName").value = hall;
+
+    document.getElementById("hallId").value = hallId;
+
+    document.getElementById("amount").value =
+        "₹" + hallPrices[hall].toLocaleString("en-IN");
+
+    document.getElementById("totalAmount").value =
+        hallPrices[hall];
+
+}
+
+if (date) {
+    document.getElementById("bookingDate").value = date;
+}
+
+// Submit booking
+document.getElementById("bookingForm").addEventListener("submit", function(e) {
+
+    const eventTime = document.getElementById("eventTime").value;
+
+    const times = {
+        morning: ["08:00", "12:00"],
+        afternoon: ["12:00", "16:00"],
+        evening: ["16:00", "22:00"],
+        full_day: ["08:00", "22:00"]
+    };
+
+    if (!times[eventTime]) {
+
+        e.preventDefault();
+
+        alert("Please select event time.");
+
+        return;
+    }
+
+    if (!hallId || hallId !== Number(document.getElementById("hallId").value)) {
+
+        e.preventDefault();
+
+        alert("Invalid hall ID. Please select the hall again.");
+
+        return;
+    }
+
+    document.getElementById("hallId").value = hallId;
+
+    document.getElementById("hiddenHallName").value = hall;
+
+    document.getElementById("startTime").value = times[eventTime][0];
+
+    document.getElementById("endTime").value = times[eventTime][1];
+
+    document.getElementById("totalAmount").value = hallPrices[hall];
+
+});
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html><html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Feedback</title><style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+    }
+
+    body {
+        background: #f2f4f8;
+        padding: 30px 15px;
+    }
+
+    .container {
+        max-width: 550px;
+        margin: auto;
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #263b5e;
+    }
+
+    label {
+        display: block;
+        margin-top: 15px;
+        font-weight: bold;
+    }
+
+    input, textarea {
+        width: 100%;
+        padding: 12px;
+        margin-top: 8px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+    }
+
+    textarea {
+        height: 130px;
+        resize: vertical;
+    }
+
+    button {
+        width: 100%;
+        padding: 13px;
+        margin-top: 20px;
+        background: #263b5e;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: #162b48;
+    }
+</style>
+
+</head><body><div class="container"><h2>Share Your Feedback</h2>
+
+<form action="feedback.php" method="POST">
+
+    <label>Booking ID</label>
+    <input type="number" name="booking_id"
+           placeholder="Enter your booking ID" required>
+
+    <label>Your Comments</label>
+    <textarea name="comments"
+              placeholder="Share your experience..."
+              required></textarea>
+
+    <button type="submit">Submit Feedback</button>
+
+</form>
+
+</div>
+<script>
+    const params = new URLSearchParams(window.location.search);
+
+    const bookingId = params.get("booking_id");
+
+    if (bookingId) {
+        document.querySelector('input[name="booking_id"]').value = bookingId;
+        document.querySelector('input[name="booking_id"]').readOnly = true;
+    }
+</script>
+
+</body>
+</html>
