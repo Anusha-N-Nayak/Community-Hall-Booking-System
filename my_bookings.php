@@ -60,6 +60,17 @@ while ($row = mysqli_fetch_assoc($result)) {
 </head>
 
 <body>
+    <a href="dashboard.php" style="
+    display:inline-block;
+    padding:10px 20px;
+    background:#e8edf3;
+    color:#243b55;
+    text-decoration:none;
+    border-radius:6px;
+    font-weight:bold;
+    margin:20px;">
+    ← Back to Dashboard
+</a>
 
 <h1 align="center">My Bookings</h1>
 

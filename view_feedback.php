@@ -2,9 +2,9 @@
 include "db.php";
 
 $hall_name = $_GET["hall"] ?? "";
-if ($hall_name == "Royal Palace Community Hall") {
-    $hall_name = "Royal Community Hall";
-}
+
+
+
 $feedback_list = [];
 $error = "";
 
@@ -38,18 +38,10 @@ if ($hall_name != "") {
 } else {
     $error = "Please select a hall.";
 }
-?>
-
-<!DOCTYPE html>
-<html lang="en">
-
+?><!DOCTYPE html><html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>View Hall Feedback</title>
-
-<style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>View Hall Feedback</title><style>
 * {
     box-sizing: border-box;
     font-family: Arial, sans-serif;
@@ -83,3 +75,96 @@ h3 {
 .feedback-card {
     background: #f2f5f9;
     padding: 20px;
+    margin-top: 20px;
+    border-radius: 8px;
+    border-left: 5px solid #1e6091;
+}
+
+.feedback-card p {
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+.error {
+    text-align: center;
+    color: red;
+    margin-top: 20px;
+}
+
+.no-feedback {
+    text-align: center;
+    color: #555;
+    margin-top: 25px;
+}
+
+.back-btn {
+    display: inline-block;
+    padding: 9px 18px;
+    background: #e8edf3;
+    color: #243b55;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    transition: 0.3s;
+}
+
+.back-btn:hover {
+    background: #d5dee8;
+}
+
+.back-btn:hover {
+    background: #ffb703;
+    color: #222;
+}
+
+</style>
+</head>
+<body>
+
+
+<div style="max-width:750px; margin:0 auto 15px;">
+    <a href="halldetails.php?hall=<?php echo urlencode($hall_name); ?>" class="back-btn">
+        ← Back to Hall Details
+    </a>
+</div>
+<div class="container">
+    <h1>Customer Feedback</h1><h3><?php echo htmlspecialchars($hall_name); ?></h3><?php if ($error != "") { ?><p class="error">
+    <?php echo htmlspecialchars($error); ?>
+</p>
+
+<?php } elseif (count($feedback_list) > 0) { ?><?php foreach ($feedback_list as $feedback) { ?>
+
+    <div class="feedback-card">
+
+        <p>
+            <b>Customer:</b>
+            <?php echo htmlspecialchars($feedback["name"]); ?>
+        </p>
+
+        <p>
+            <b>Feedback:</b>
+            <?php echo nl2br(htmlspecialchars($feedback["comments"])); ?>
+        </p>
+
+        <p>
+            <small>
+                <?php echo htmlspecialchars($feedback["created_at"]); ?>
+            </small>
+        </p>
+
+    </div>
+
+<?php } ?>
+
+<?php } else { ?><p class="no-feedback">
+    No feedback available for this hall yet.
+</p>
+
+<?php } ?>
+
+
+
+</div></body>
+</html>

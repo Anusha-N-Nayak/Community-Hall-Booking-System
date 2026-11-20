@@ -1,3 +1,14 @@
+<?php
+session_start();
+
+if (!isset($_SESSION["user_id"])) {
+    header("Location: login/login.html");
+    exit();
+}
+
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Pragma: no-cache");
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -227,7 +238,7 @@
 
         <h2>Community Hall Booking</h2>
 
-        <a href="login.html" style="color:white;">
+        <a href="logout.php" style="color:white;">
             Logout
         </a>
 
@@ -244,9 +255,9 @@
 
         <a href="feedback.html">Feedback</a>
 
-        <a href="notifications.html">Notifications</a>
+        <a href="notifications.php">Notifications</a>
 
-        <a href="profile.html">My Profile</a>
+        <a href="profile.php">My Profile</a>
 
     </nav>
 
@@ -361,7 +372,7 @@
         function viewDetails(hallName) {
 
             window.location.href =
-                "halldetails.html?hall=" +
+                "halldetails.php?hall=" +
                 encodeURIComponent(hallName);
 
         }
@@ -372,7 +383,13 @@
             window.location.href = "allhalls.html";
 
         }
-
+        </script>
+    <script>
+    window.addEventListener("pageshow", function(event) {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
     </script>
 
 </body>

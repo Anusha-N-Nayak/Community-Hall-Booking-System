@@ -42,7 +42,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     mysqli_stmt_bind_param($stmt, "iis", $user_id, $booking_id, $comments);
 
     if (mysqli_stmt_execute($stmt)) {
-        echo "Feedback submitted successfully!";
+        echo "
+<h2>Feedback submitted successfully!</h2>
+<a href='dashboard.php' style='
+    display:inline-block;
+    padding:12px 20px;
+    background:#243b55;
+    color:white;
+    text-decoration:none;
+    border-radius:5px;
+    margin-top:20px;'>
+    ← Back to Dashboard
+</a>";
+    
     } else {
         echo "Feedback submission failed.";
     }

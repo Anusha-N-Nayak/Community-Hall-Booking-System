@@ -21,7 +21,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             $_SESSION["user_id"] = $user["user_id"];
             $_SESSION["name"] = $user["name"];
-            header("Location: ../dashboard.html");
+            header("Location: ../dashboard.php");
 exit();
 
             echo "Login successful! Welcome " . htmlspecialchars($user["name"]);

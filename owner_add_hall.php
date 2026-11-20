@@ -15,7 +15,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $capacity = (int)$_POST["capacity"];
     $price = (float)$_POST["price"];
     $facilities = trim($_POST["facilities"]);
-    $image = trim($_POST["image"]);
+    $image = "";
+
+if (isset($_FILES["image"]) && $_FILES["image"]["error"] == 0) {
+
+    $folder = "uploads/";
+
+    if (!is_dir($folder)) {
+        mkdir($folder, 0777, true);
+    }
+
+    $imageName = time() . "_" . basename($_FILES["image"]["name"]);
+    $target = $folder . $imageName;
+
+    if (move_uploaded_file($_FILES["image"]["tmp_name"], $target)) {
+        $image = $target;
+    } else {
+        die("Image upload failed.");
+    }
+
+} else {
+    die("Please select a hall image.");
+}
     $description = trim($_POST["description"]);
 
     $sql = "INSERT INTO halls
@@ -41,7 +62,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <h2>Add Your Community Hall</h2>
 
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
 
 Hall Name:
 <input type="text" name="hall_name" required><br><br>
@@ -59,7 +80,7 @@ Facilities:
 <input type="text" name="facilities"><br><br>
 
 Image:
-<input type="text" name="image"><br><br>
+<input type="file" name="image" accept="image/*" required><br><br>
 
 Description:
 <textarea name="description"></textarea><br><br>
