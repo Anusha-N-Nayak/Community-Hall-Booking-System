@@ -111,6 +111,11 @@
             color: #a00000;
             cursor: not-allowed;
         }
+        .partial {
+    background: #ffe0a3;
+    color: #875000;
+    cursor: pointer;
+}
 
         .selected {
             background: #2878d0;
@@ -243,9 +248,10 @@
 
             <span class="available">Available</span>
 
+            <span class="partial">Partially Booked</span>
             <span class="booked">Booked</span>
-
             <span class="selected">Selected</span>
+            
 
         </div>
 
@@ -257,6 +263,22 @@
             </p>
 
         </div>
+        <div id="timeSlots" style="
+    display:none;
+    margin:25px auto;
+    max-width:500px;
+    padding:20px;
+    background:#f2f5f9;
+    border-radius:10px;
+">
+
+    <h3 style="color:#142d4e; margin-bottom:15px;">
+        Available Time Slots
+    </h3>
+
+    <div id="slotList"></div>
+
+</div>
 
 
         <div class="buttons">
@@ -281,260 +303,294 @@
         </p>
 
     </footer>
-
-
     <script>
 
-        // Get selected hall
 
-        const params = new URLSearchParams(window.location.search);
-
-        const hall = params.get("hall");
-
-        document.getElementById("hallName").innerText =
-            hall || "Community Hall";
-
-
-        // Current date
-
-        let today = new Date();
-
-        let currentMonth = today.getMonth();
-
-        let currentYear = today.getFullYear();
-
-        let selectedDay = null;
-
-
-        // Sample booked dates
-
-        const bookedDates = {
-
-            "Royal Palace Community Hall": {
-                "2026-11-13": true,
-                "2026-11-15": true,
-                "2026-11-20": true
-            },
-
-            "Grand Celebration Hall": {
-                "2026-11-12": true,
-                "2026-11-18": true
-            },
-
-            "Green Garden Community Hall": {
-                "2026-11-14": true,
-                "2026-11-21": true
-            }
-
-        };
-
-
-        // Display calendar
-
-        function generateCalendar() {
-
-            const calendar =
-                document.getElementById("calendar");
-
-            calendar.innerHTML = "";
-
-            const monthNames = [
-                "January", "February", "March",
-                "April", "May", "June",
-                "July", "August", "September",
-                "October", "November", "December"
-            ];
-
-            document.getElementById("monthYear").innerText =
-                monthNames[currentMonth] + " " + currentYear;
-
-
-            const firstDay =
-                new Date(currentYear, currentMonth, 1).getDay();
-
-            const totalDays =
-                new Date(currentYear, currentMonth + 1, 0).getDate();
-
-
-            const weekdays = [
-                "Sun", "Mon", "Tue", "Wed",
-                "Thu", "Fri", "Sat"
-            ];
-
-
-            weekdays.forEach(function(day) {
-
-                let div = document.createElement("div");
-
-                div.className = "day-name";
-
-                div.innerText = day;
-
-                calendar.appendChild(div);
-
-            });
-
-
-            // Empty spaces
-
-            for (let i = 0; i < firstDay; i++) {
-
-                let empty = document.createElement("div");
-
-                calendar.appendChild(empty);
-
-            }
-
-
-            // Dates
-
-            for (let day = 1; day <= totalDays; day++) {
-
-                let date = document.createElement("div");
-
-                date.className = "date";
-
-                date.innerText = day;
-
-
-                let dateKey =
-                    currentYear + "-" +
-                    String(currentMonth + 1).padStart(2, "0") +
-                    "-" +
-                    String(day).padStart(2, "0");
-
-
-                let isPast =
-                    new Date(currentYear, currentMonth, day) <
-                    new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-
-                let isBooked =
-                    bookedDates[hall] &&
-                    bookedDates[hall][dateKey];
-
-
-                if (isPast) {
-
-                    date.classList.add("past");
-
-                }
-
-                else if (isBooked) {
-
-                    date.classList.add("booked");
-
-                }
-
-                else {
-
-                    date.classList.add("available");
-
-                }
-
-
-                if (
-                    selectedDay === dateKey &&
-                    !isPast &&
-                    !isBooked
-                ) {
-
-                    date.classList.add("selected");
-
-                }
-
-
-                if (!isPast && !isBooked) {
-
-                    date.onclick = function() {
-
-                        selectedDay = dateKey;
-
-                        document.getElementById("selectedDate").innerText =
-                            "Selected Date: " + dateKey;
-
-                        generateCalendar();
-
-                    };
-
-                }
-
-
-                calendar.appendChild(date);
-
-            }
-
+    const params = new URLSearchParams(window.location.search);
+
+const hall = params.get("hall") || localStorage.getItem("selectedHall");
+const hallId = Number(
+    params.get("hall_id") || localStorage.getItem("selectedHallId")
+);
+
+document.getElementById("hallName").innerText =
+    hall || "Community Hall";
+
+let today = new Date();
+let currentMonth = today.getMonth();
+let currentYear = today.getFullYear();
+
+let selectedDay = null;
+let selectedSlot = null;
+let bookings = [];
+
+const slots = {
+    morning: ["08:00:00", "12:00:00", "Morning (8 AM - 12 PM)"],
+    afternoon: ["12:00:00", "16:00:00", "Afternoon (12 PM - 4 PM)"],
+    evening: ["16:00:00", "22:00:00", "Evening (4 PM - 10 PM)"],
+    full_day: ["08:00:00", "22:00:00", "Full Day (8 AM - 10 PM)"]
+};
+
+function dateKey(year, month, day) {
+    return year + "-" +
+        String(month + 1).padStart(2, "0") + "-" +
+        String(day).padStart(2, "0");
+}
+
+function isPast(date) {
+    return new Date(date + "T00:00:00") <
+        new Date(today.getFullYear(), today.getMonth(), today.getDate());
+}
+
+function timeToMinutes(time) {
+    const parts = time.split(":");
+    return Number(parts[0]) * 60 + Number(parts[1]);
+}
+
+function isSlotBooked(date, slot) {
+    const start = timeToMinutes(slots[slot][0]);
+    const end = timeToMinutes(slots[slot][1]);
+
+    return bookings.some(booking => {
+
+        if (booking.event_date !== date) {
+            return false;
         }
 
+        const bookedStart = timeToMinutes(booking.start_time);
+        const bookedEnd = timeToMinutes(booking.end_time);
 
-        // Change month
+        return bookedStart < end && bookedEnd > start;
+    });
+}
 
-        function changeMonth(value) {
+function generateCalendar() {
 
-            currentMonth += value;
+    const calendar = document.getElementById("calendar");
+    calendar.innerHTML = "";
 
-            if (currentMonth < 0) {
+    const monthNames = [
+        "January", "February", "March",
+        "April", "May", "June",
+        "July", "August", "September",
+        "October", "November", "December"
+    ];
 
-                currentMonth = 11;
+    document.getElementById("monthYear").innerText =
+        monthNames[currentMonth] + " " + currentYear;
 
-                currentYear--;
+    const firstDay =
+        new Date(currentYear, currentMonth, 1).getDay();
 
-            }
+    const totalDays =
+        new Date(currentYear, currentMonth + 1, 0).getDate();
 
-            if (currentMonth > 11) {
+    ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        .forEach(day => {
+            const div = document.createElement("div");
+            div.className = "day-name";
+            div.innerText = day;
+            calendar.appendChild(div);
+        });
 
-                currentMonth = 0;
+    for (let i = 0; i < firstDay; i++) {
+        calendar.appendChild(document.createElement("div"));
+    }
 
-                currentYear++;
+    for (let day = 1; day <= totalDays; day++) {
 
-            }
+        const date = document.createElement("div");
+        date.className = "date";
+        date.innerText = day;
 
-            generateCalendar();
+        const key = dateKey(currentYear, currentMonth, day);
 
+        const morning = isSlotBooked(key, "morning");
+        const afternoon = isSlotBooked(key, "afternoon");
+        const evening = isSlotBooked(key, "evening");
+
+        const bookedCount =
+            [morning, afternoon, evening].filter(Boolean).length;
+
+        if (isPast(key)) {
+            date.classList.add("past");
+        } else if (bookedCount === 3) {
+            date.classList.add("booked");
+        } else if (bookedCount > 0) {
+            date.classList.add("partial");
+        } else {
+            date.classList.add("available");
         }
 
-
-        // Confirm date
-
-        function confirmDate() {
-
-            if (selectedDay === null) {
-
-                alert("Please select an available date.");
-
-                return;
-
-            }
-
-            localStorage.setItem("selectedHall", hall);
-
-            localStorage.setItem("bookingDate", selectedDay);
-
-            alert("Date selected successfully!");
-
-            window.location.href =
-                "booking.html?hall=" +
-                encodeURIComponent(hall) +
-                "&date=" +
-                encodeURIComponent(selectedDay);
-
+        if (selectedDay === key) {
+            date.classList.add("selected");
         }
 
+        if (!isPast(key) && bookedCount < 3) {
+            date.onclick = function() {
+                selectedDay = key;
+                selectedSlot = null;
 
-        // Back button
+                document.getElementById("selectedDate").innerText =
+                    "Selected Date: " + key;
 
-        function goBack() {
-
-            window.location.href =
-                "halldetails.html?hall=" +
-                encodeURIComponent(hall);
-
+                showTimeSlots(key);
+                generateCalendar();
+            };
         }
 
+        calendar.appendChild(date);
+    }
+}
+
+function showTimeSlots(date) {
+
+    const section = document.getElementById("timeSlots");
+    const list = document.getElementById("slotList");
+
+    section.style.display = "block";
+    list.innerHTML = "";
+
+    Object.keys(slots).forEach(slot => {
+
+        const booked = isSlotBooked(date, slot);
+
+        const row = document.createElement("div");
+
+        row.style.cssText =
+            "display:flex;justify-content:space-between;" +
+            "align-items:center;padding:12px;margin-bottom:10px;" +
+            "background:white;border-radius:6px;gap:8px;";
+
+        const name = document.createElement("span");
+        name.innerText = slots[slot][2];
+
+        const button = document.createElement("button");
+
+        button.type = "button";
+        button.style.cssText =
+            "padding:9px 12px;border:0;border-radius:5px;" +
+            "color:white;min-width:105px;";
+
+        if (booked) {
+
+            button.innerText = "Booked";
+            button.style.background = "#c62828";
+            button.disabled = true;
+
+        } else {
+
+            button.innerText =
+                selectedSlot === slot ? "Selected" : "Available";
+
+            button.style.background =
+                selectedSlot === slot ? "#2878d0" : "#239b56";
+
+            button.onclick = function() {
+                selectedSlot = slot;
+                showTimeSlots(date);
+            };
+        }
+
+        row.appendChild(name);
+        row.appendChild(button);
+        list.appendChild(row);
+    });
+}
+
+async function loadBookings() {
+
+    if (!hallId) {
+        alert("Please select a valid hall.");
+        window.location.href = "dashboard.php";
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            "availability_data.php?hall_id=" + hallId +
+            "&month=" + (currentMonth + 1) +
+            "&year=" + currentYear
+        );
+
+        const data = await response.json();
+
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        bookings = data.bookings || [];
+        console.log("Bookings received:",bookings);
 
         generateCalendar();
 
-    </script>
+        if (selectedDay) {
+            showTimeSlots(selectedDay);
+        }
+
+    } catch (error) {
+        alert("Unable to load availability. Please try again.");
+        console.error(error);
+    }
+}
+
+function changeMonth(value) {
+
+    currentMonth += value;
+
+    if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+    }
+
+    if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+    }
+
+    selectedDay = null;
+    selectedSlot = null;
+
+    document.getElementById("selectedDate").innerText =
+        "Please select a date.";
+
+    document.getElementById("timeSlots").style.display = "none";
+
+    loadBookings();
+}
+
+function confirmDate() {
+
+    if (!selectedDay) {
+        alert("Please select a date.");
+        return;
+    }
+
+    if (!selectedSlot) {
+        alert("Please select an available time slot.");
+        return;
+    }
+
+    localStorage.setItem("selectedHall", hall);
+    localStorage.setItem("selectedHallId", hallId);
+    localStorage.setItem("bookingDate", selectedDay);
+
+    window.location.href =
+        "booking.html?hall=" + encodeURIComponent(hall) +
+        "&hall_id=" + hallId +
+        "&date=" + encodeURIComponent(selectedDay) +
+        "&time=" + selectedSlot;
+}
+
+function goBack() {
+    window.location.href =
+        "halldetails.php?hall=" + encodeURIComponent(hall);
+}
+
+loadBookings();
+</script>
 
 </body>
 

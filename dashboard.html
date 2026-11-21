@@ -267,20 +267,19 @@
 
     <!-- Search -->
 
-    <section class="search-section">
+<section class="search-section">
 
-        <h2>Find Your Perfect Hall</h2>
+    <h2>Find Your Perfect Hall</h2>
 
-        <input
-            type="text"
-            id="searchInput"
-            placeholder="Search community hall by name...">
+    <input
+        type="text"
+        id="searchInput"
+        placeholder="Search community hall by name..."
+        oninput="searchHalls()"
+        onfocus="searchHalls()">
+    <div id="searchSuggestions" class="search-suggestions"></div>
 
-        <button class="search-btn" onclick="searchHalls()">
-            Search
-        </button>
-
-    </section>
+</section>
 
 
     <!-- Available Halls -->

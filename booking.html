@@ -156,61 +156,62 @@
 
 <script>
 
-// Hall prices
-const hallPrices = {
-    "Royal Community Hall": 25000,
-    "Royal Palace Community Hall": 25000,
-    "Grand Celebration Hall": 18000,
-    "Green Garden Community Hall": 12000
-};
-
-// Database Hall IDs
-const hallIds = {
-    "Royal Community Hall": 1,
-    "Royal Palace Community Hall": 1,
-    "Grand Celebration Hall": 3,
-    "Green Garden Community Hall": 2
-};
-
-// Get selected hall
 const params = new URLSearchParams(window.location.search);
 
-const hall = params.get("hall") || localStorage.getItem("selectedHall");
+const selectedTime = params.get("time");
 
-const receivedId = Number(params.get("hall_id"));
+if (selectedTime) {
+    document.getElementById("eventTime").value = selectedTime;
+}
 
-const hallId = hallIds[hall];
+const receivedId = Number(
+    params.get("hall_id") || localStorage.getItem("selectedHallId")
+);
 
-// Get date
 const date = params.get("date") || localStorage.getItem("bookingDate");
 
-// Validate hall
-if (!hall || !hallId) {
+let hall = "";
+let hallId = 0;
+let hallPrice = 0;
 
+// Get hall details from database
+if (!receivedId) {
     alert("Please select a valid hall.");
-
     window.location.href = "dashboard.php";
-
 } else {
+    fetch("get_hall_details.php?hall_id=" + receivedId)
+        .then(response => response.json())
+        .then(data => {
 
-    document.getElementById("hallName").value = hall;
+            if (data.error) {
+                alert("Hall not found!");
+                window.location.href = "dashboard.php";
+                return;
+            }
 
-    document.getElementById("hiddenHallName").value = hall;
+            hall = data.hall_name;
+            hallId = Number(data.hall_id);
+            hallPrice = Number(data.price);
 
-    document.getElementById("hallId").value = hallId;
+            document.getElementById("hallName").value = hall;
+            document.getElementById("hiddenHallName").value = hall;
+            document.getElementById("hallId").value = hallId;
 
-    document.getElementById("amount").value =
-        "₹" + hallPrices[hall].toLocaleString("en-IN");
+            document.getElementById("amount").value =
+                "₹" + hallPrice.toLocaleString("en-IN");
 
-    document.getElementById("totalAmount").value =
-        hallPrices[hall];
+            document.getElementById("totalAmount").value = hallPrice;
 
+        })
+        .catch(error => {
+            alert("Unable to load hall details.");
+            console.error(error);
+        });
 }
 
 if (date) {
     document.getElementById("bookingDate").value = date;
 }
-
 // Submit booking
 document.getElementById("bookingForm").addEventListener("submit", function(e) {
 
@@ -249,7 +250,7 @@ document.getElementById("bookingForm").addEventListener("submit", function(e) {
 
     document.getElementById("endTime").value = times[eventTime][1];
 
-    document.getElementById("totalAmount").value = hallPrices[hall];
+    document.getElementById("totalAmount").value = hallPrice;
 
 });
 

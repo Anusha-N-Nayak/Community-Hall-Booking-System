@@ -290,6 +290,8 @@ header("Pragma: no-cache");
         <button class="search-btn" onclick="searchHalls()">
             Search
         </button>
+        <div id="searchSuggestions" class="search-suggestions"></div>
+
 
     </section>
 
@@ -305,20 +307,14 @@ header("Pragma: no-cache");
 
            <?php include "customer_halls.php"; ?>
            </div>
+           <p id="noResult" style="display:none; text-align:center; color:red; margin:20px;">
+    No matching halls found!
+</p>
 
     </section>
 
 
-    <!-- View All Halls -->
-
-    <div class="view-all">
-
-        <button onclick="viewAllHalls()">
-            View All Halls
-        </button>
-
-    </div>
-
+   
 
     <!-- Footer -->
 
@@ -337,36 +333,31 @@ header("Pragma: no-cache");
 
         function searchHalls() {
 
-            let input = document.getElementById("searchInput")
-                .value.toLowerCase();
+    let input = document.getElementById("searchInput").value.toLowerCase().trim();
 
-            let cards = document.querySelectorAll(".hall-card");
+    let cards = document.querySelectorAll(".hall-card");
 
-            let found = false;
+    let found = 0;
 
-            cards.forEach(function(card) {
+    cards.forEach(function(card) {
 
-                let name = card.querySelector("h3")
-                    .innerText.toLowerCase();
+        let name = card.querySelector("h3").innerText.toLowerCase();
 
-                if (name.includes(input)) {
-
-                    card.style.display = "block";
-                    found = true;
-
-                } else {
-
-                    card.style.display = "none";
-
-                }
-
-            });
-
-            if (!found) {
-                alert("No matching hall found!");
-            }
-
+        if (name.includes(input)) {
+            card.style.display = "block";
+            found++;
+        } else {
+            card.style.display = "none";
         }
+
+    });
+
+    let noResult = document.getElementById("noResult");
+
+    if (noResult) {
+        noResult.style.display = found === 0 ? "block" : "none";
+    }
+}
 
 
         function viewDetails(hallName) {
