@@ -1,12 +1,35 @@
+
 <?php
+session_start();
 include "db.php";
 
-$hall_name = $_GET["hall"] ?? "";
-
-
+$hall_name = trim($_GET["hall"] ?? "");
 
 $feedback_list = [];
 $error = "";
+
+// If hall name is not received, get it using hall_id
+if ($hall_name == "" && isset($_GET["hall_id"])) {
+
+    $hall_id = (int)$_GET["hall_id"];
+
+    $hall_sql = "SELECT hall_name FROM halls WHERE hall_id = ?";
+    $hall_stmt = mysqli_prepare($conn, $hall_sql);
+
+    if ($hall_stmt) {
+        mysqli_stmt_bind_param($hall_stmt, "i", $hall_id);
+        mysqli_stmt_execute($hall_stmt);
+
+        $hall_result = mysqli_stmt_get_result($hall_stmt);
+        $hall = mysqli_fetch_assoc($hall_result);
+
+        if ($hall) {
+            $hall_name = $hall["hall_name"];
+        }
+
+        mysqli_stmt_close($hall_stmt);
+    }
+}
 
 if ($hall_name != "") {
 
@@ -38,7 +61,8 @@ if ($hall_name != "") {
 } else {
     $error = "Please select a hall.";
 }
-?><!DOCTYPE html><html lang="en">
+?>
+<!DOCTYPE html><html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>View Hall Feedback</title><style>
@@ -125,9 +149,21 @@ h3 {
 
 
 <div style="max-width:750px; margin:0 auto 15px;">
+
+    <?php if (($_GET["source"] ?? "") == "owner") { ?>
+
+    <a href="owner_dashboard.php" class="back-btn">
+        ← Back to Owner Dashboard
+    </a>
+
+<?php } else { ?>
+
     <a href="halldetails.php?hall=<?php echo urlencode($hall_name); ?>" class="back-btn">
         ← Back to Hall Details
     </a>
+
+<?php } ?>
+
 </div>
 <div class="container">
     <h1>Customer Feedback</h1><h3><?php echo htmlspecialchars($hall_name); ?></h3><?php if ($error != "") { ?><p class="error">

@@ -96,14 +96,26 @@
         color: #517fa4;
         text-decoration: none;
     }
-
+.error {
+    color: #b91c1c;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    padding: 12px;
+    border-radius: 6px;
+    text-align: center;
+    margin-bottom: 18px;
+    font-size: 14px;
+    font-weight: bold;
+}
 </style>
+
 
 </head><body><div class="login-container">
 
-    <h2>Welcome Back!</h2>
+    <h2>Customer Login!</h2>
 
-    <p class="subtitle">Login to Your Account</p>
+    <p class="subtitle">Welcome Back! Login to Your Account</p>
+    <div id="errorMessage"></div>
 
     <form action="login.php" method="post">
 
@@ -134,10 +146,17 @@
 
     <div class="home-link">
 
-        <a href="index.html">← Back to Home</a>
+        <a href="../index.html">← Back to Home</a>
 
     </div>
 
 </div>
+<script>
+    const params = new URLSearchParams(window.location.search);
 
+    if (params.get("error") === "invalid") {
+        document.getElementById("errorMessage").innerHTML =
+            '<p class="error">Invalid email or password. Please try again!</p>';
+    }
+</script>
 </body></html>

@@ -34,8 +34,21 @@ $result = mysqli_stmt_get_result($stmt);
 
 <body>
 
-<h2>Manage Hall Bookings</h2>
+<a href="owner_dashboard.php"
+   style="
+       display:inline-block;
+       padding:10px 18px;
+       background:#142d4e;
+       color:white;
+       text-decoration:none;
+       border-radius:6px;
+       margin-bottom:20px;
+       font-weight:bold;
+   ">
+    ← Back to Owner Dashboard
+</a>
 
+<h2>Manage Hall Bookings</h2>
 <?php
 if (mysqli_num_rows($result) > 0) {
 ?>
