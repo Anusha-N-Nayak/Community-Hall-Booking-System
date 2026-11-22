@@ -22,7 +22,50 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($end_time <= $start_time) {
         die("Please enter a valid event time.");
     }
+  
 
+
+    // Check whether the selected hall is under maintenance
+$maintenance_sql = "SELECT maintenance_id, reason
+                    FROM hall_maintenance
+                    WHERE hall_id = ?
+                    AND maintenance_date = ?";
+
+$maintenance_stmt = mysqli_prepare($conn, $maintenance_sql);
+
+mysqli_stmt_bind_param(
+    $maintenance_stmt,
+    "is",
+    $hall_id,
+    $event_date
+);
+
+mysqli_stmt_execute($maintenance_stmt);
+
+$maintenance_result = mysqli_stmt_get_result($maintenance_stmt);
+
+if (mysqli_num_rows($maintenance_result) > 0) {
+
+    $maintenance_row = mysqli_fetch_assoc($maintenance_result);
+
+    $reason = $maintenance_row["reason"] ?? "";
+
+    echo "<h2>Booking Unavailable!</h2>";
+
+    echo "<p>Sorry! This hall is under maintenance on "
+         . htmlspecialchars($event_date) . ".</p>";
+
+    if (!empty($reason)) {
+        echo "<p>Reason: "
+             . htmlspecialchars($reason) . "</p>";
+    }
+
+    echo "<p>Please select another date.</p>";
+
+    mysqli_stmt_close($maintenance_stmt);
+    exit;
+}
+mysqli_stmt_close($maintenance_stmt);
     // Check overlapping bookings
     $check_sql = "SELECT booking_id FROM bookings
                   WHERE hall_id = ?

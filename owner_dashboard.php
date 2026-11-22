@@ -30,13 +30,20 @@ $result = mysqli_stmt_get_result($stmt);
 <?php
 if (mysqli_num_rows($result) > 0) {
 
-    while ($hall = mysqli_fetch_assoc($result)) {
-        echo "<p>";
-        echo htmlspecialchars($hall["hall_name"]);
-        echo " - ";
-        echo htmlspecialchars($hall["location"]);
-        echo "</p>";
-    }
+ while ($hall = mysqli_fetch_assoc($result)) {
+
+    echo "<p>";
+
+    echo htmlspecialchars($hall["hall_name"]);
+    echo " - ";
+    echo htmlspecialchars($hall["location"]);
+
+    echo ' | <a href="owner_maintenance.php?hall_id='
+         . (int)$hall["hall_id"] .
+         '">Manage Maintenance</a>';
+
+    echo "</p>";
+}
 
 } else {
     echo "You have not added any halls yet.";
