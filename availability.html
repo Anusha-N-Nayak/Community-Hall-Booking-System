@@ -127,6 +127,11 @@
             color: #888;
             cursor: not-allowed;
         }
+        .maintenance {
+            background: #ffd9a8;
+            color: #8a3b00;
+            cursor: pointer;
+        }
 
         .legend {
             display: flex;
@@ -250,6 +255,7 @@
 
             <span class="partial">Partially Booked</span>
             <span class="booked">Booked</span>
+             <span class="maintenance">Under Maintenance</span>
             <span class="selected">Selected</span>
             
 
@@ -263,6 +269,20 @@
             </p>
 
         </div>
+
+    <div id="maintenanceMessage" style="
+    display:none;
+    margin:20px auto;
+    max-width:600px;
+    padding:15px;
+    background:#fff0e6;
+    border:1px solid #e67e22;
+    border-radius:8px;
+    color:#8a3b00;
+    text-align:center;
+    font-weight:bold;
+">
+</div>
         <div id="timeSlots" style="
     display:none;
     margin:25px auto;
@@ -323,6 +343,7 @@ let currentYear = today.getFullYear();
 let selectedDay = null;
 let selectedSlot = null;
 let bookings = [];
+let maintenance = [];
 
 const slots = {
     morning: ["08:00:00", "12:00:00", "Morning (8 AM - 12 PM)"],
@@ -363,7 +384,13 @@ function isSlotBooked(date, slot) {
         return bookedStart < end && bookedEnd > start;
     });
 }
+function getMaintenanceForDate(date) {
 
+    return maintenance.find(item =>
+        item.maintenance_date === date
+    );
+
+}
 function generateCalendar() {
 
     const calendar = document.getElementById("calendar");
@@ -409,35 +436,69 @@ function generateCalendar() {
         const afternoon = isSlotBooked(key, "afternoon");
         const evening = isSlotBooked(key, "evening");
 
-        const bookedCount =
-            [morning, afternoon, evening].filter(Boolean).length;
+const bookedCount =
+    [morning, afternoon, evening].filter(Boolean).length;
 
-        if (isPast(key)) {
-            date.classList.add("past");
-        } else if (bookedCount === 3) {
-            date.classList.add("booked");
-        } else if (bookedCount > 0) {
-            date.classList.add("partial");
-        } else {
-            date.classList.add("available");
-        }
+// Check whether this date has maintenance
+const maintenanceInfo = getMaintenanceForDate(key);
 
-        if (selectedDay === key) {
-            date.classList.add("selected");
-        }
+// Display the correct date status
+if (isPast(key)) {
+    date.classList.add("past");
+} else if (maintenanceInfo) {
+    date.classList.add("maintenance");
+} else if (bookedCount === 3) {
+    date.classList.add("booked");
+} else if (bookedCount > 0) {
+    date.classList.add("partial");
+} else {
+    date.classList.add("available");
+}
 
-        if (!isPast(key) && bookedCount < 3) {
-            date.onclick = function() {
-                selectedDay = key;
-                selectedSlot = null;
+if (selectedDay === key && !maintenanceInfo) {
+    date.classList.add("selected");
+}
 
-                document.getElementById("selectedDate").innerText =
-                    "Selected Date: " + key;
+// Allow users to select maintenance dates to see the warning
+if (!isPast(key) && (maintenanceInfo || bookedCount < 3)) {
 
-                showTimeSlots(key);
-                generateCalendar();
-            };
-        }
+  date.onclick = function() {
+
+    selectedDay = key;
+    selectedSlot = null;
+
+    document.getElementById("selectedDate").innerText =
+        "Selected Date: " + key;
+
+    const message = document.getElementById("maintenanceMessage");
+    const confirmButton = document.querySelector(".confirm");
+
+    if (maintenanceInfo) {
+
+        message.style.display = "block";
+
+        message.textContent =
+            "This hall is under maintenance on " + key + ". " +
+            (maintenanceInfo.reason || "Please select another date.");
+
+        document.getElementById("timeSlots").style.display = "none";
+
+        // Hide Confirm Date immediately
+        confirmButton.style.display = "none";
+
+    } else {
+
+        message.style.display = "none";
+
+        // Show Confirm Date for normal dates
+        confirmButton.style.display = "inline-block";
+
+        showTimeSlots(key);
+    }
+
+    generateCalendar();
+};
+}
 
         calendar.appendChild(date);
     }
@@ -522,7 +583,9 @@ async function loadBookings() {
         }
 
         bookings = data.bookings || [];
+        maintenance = data.maintenance || [];
         console.log("Bookings received:",bookings);
+        console.log("Maintenance received:", maintenance);
 
         generateCalendar();
 
@@ -557,7 +620,7 @@ function changeMonth(value) {
         "Please select a date.";
 
     document.getElementById("timeSlots").style.display = "none";
-
+    document.querySelector(".confirm").style.display = "inline-block";
     loadBookings();
 }
 
@@ -567,6 +630,27 @@ function confirmDate() {
         alert("Please select a date.");
         return;
     }
+    // Prevent booking on a maintenance date
+const maintenanceInfo = getMaintenanceForDate(selectedDay);
+
+if (maintenanceInfo) {
+
+    const message = document.getElementById("maintenanceMessage");
+
+    message.style.display = "block";
+
+    message.textContent =
+        "This hall is under maintenance on " + selectedDay +
+        ". Please select another date.";
+
+    document.getElementById("timeSlots").style.display = "none";
+    document.querySelector(".confirm").style.display = "none";
+    selectedSlot = null;
+
+    alert("This hall is under maintenance on this date. Please select another date.");
+
+    return;
+}
 
     if (!selectedSlot) {
         alert("Please select an available time slot.");

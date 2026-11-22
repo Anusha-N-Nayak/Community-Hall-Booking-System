@@ -88,6 +88,9 @@ if (mysqli_num_rows($result) > 0) {
             <a href="owner_delete_request.php?hall_id=<?php echo $hall['hall_id']; ?>">
                 Delete
             </a>
+<a href="owner_maintenance.php?hall_id=<?php echo $hall['hall_id']; ?>">
+    Manage Maintenance
+</a>
         </td>
     </tr>
 
