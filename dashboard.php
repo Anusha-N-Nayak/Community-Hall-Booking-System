@@ -225,8 +225,41 @@ header("Pragma: no-cache");
             }
 
         }
+        .search-suggestions {
+    display: none;
+    max-width: 535px;
+    width: 90%;
+    margin: 5px auto 0;
+    background: #ffffff;
+    border: 1px solid #dce2ec;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.12);
+    text-align: left;
+    overflow: hidden;
+    z-index: 1000;
+}
 
-    </style>
+.search-suggestions div {
+    padding: 13px 18px;
+    cursor: pointer;
+    color: #26344d;
+    font-size: 15px;
+    text-align: left;
+    border-bottom: 1px solid #eeeeee;
+    transition: background 0.2s;
+}
+
+.search-suggestions div:last-child {
+    border-bottom: none;
+}
+
+.search-suggestions div:hover {
+    background: #eef2ff;
+    color: #243b70;
+}
+
+</style>
+
 
 </head>
 
@@ -283,14 +316,16 @@ header("Pragma: no-cache");
         <h2>Find Your Perfect Hall</h2>
 
         <input
-            type="text"
-            id="searchInput"
-            placeholder="Search community hall by name...">
+    type="text"
+    id="searchInput"
+    autocomplete="off"
+    placeholder="Search community hall by name..."
+    onkeydown="if(event.key === 'Enter') {
+        event.preventDefault();
+        searchHalls();
+    }">
 
-        <button class="search-btn" onclick="searchHalls()">
-            Search
-        </button>
-        <div id="searchSuggestions" class="search-suggestions"></div>
+<div id="searchSuggestions" class="search-suggestions"></div>
 
 
     </section>
@@ -331,25 +366,25 @@ header("Pragma: no-cache");
 
     <script>
 
-        function searchHalls() {
-
+     
+    function searchHalls() {
     let input = document.getElementById("searchInput").value.toLowerCase().trim();
 
-    let cards = document.querySelectorAll(".hall-card");
-
+    let cards = document.querySelectorAll("#hallContainer .hall-card");
     let found = 0;
 
-    cards.forEach(function(card) {
+    let words = input.split(/\s+/).filter(word => word !== "");
 
+    cards.forEach(function(card) {
         let name = card.querySelector("h3").innerText.toLowerCase();
 
-        if (name.includes(input)) {
-            card.style.display = "block";
-            found++;
-        } else {
-            card.style.display = "none";
-        }
+        let match = input === "" || words.every(word => name.includes(word));
 
+        card.style.display = match ? "" : "none";
+
+        if (match) {
+            found++;
+        }
     });
 
     let noResult = document.getElementById("noResult");
@@ -357,17 +392,89 @@ header("Pragma: no-cache");
     if (noResult) {
         noResult.style.display = found === 0 ? "block" : "none";
     }
+
+    
+}
+const searchInput = document.getElementById("searchInput");
+const suggestions = document.getElementById("searchSuggestions");
+
+function showHallSuggestions() {
+    let input = searchInput.value.toLowerCase().trim();
+
+    let cards = document.querySelectorAll("#hallContainer .hall-card");
+
+    suggestions.innerHTML = "";
+
+    let shownNames = new Set();
+
+    cards.forEach(function(card) {
+        let hallName = card.querySelector("h3").innerText.trim();
+        let uniqueName = hallName.toLowerCase();
+
+        if (uniqueName.includes(input) && !shownNames.has(uniqueName)) {
+            shownNames.add(uniqueName);
+
+            let item = document.createElement("div");
+            item.textContent = hallName;
+
+            item.onclick = function() {
+                searchInput.value = hallName;
+                suggestions.style.display = "none";
+                searchHalls();
+                viewDetails(hallName);
+            };
+
+            suggestions.appendChild(item);
+        }
+    });
+
+    suggestions.style.display =
+        suggestions.children.length > 0 ? "block" : "none";
+
+    searchHalls();
+}
+function showHallSuggestions() {
+    let input = searchInput.value.toLowerCase().trim();
+
+    let cards = document.querySelectorAll("#hallContainer .hall-card");
+
+    suggestions.innerHTML = "";
+
+    let shownNames = new Set();
+
+    cards.forEach(function(card) {
+        let hallName = card.querySelector("h3").innerText.trim();
+        let uniqueName = hallName.toLowerCase();
+
+        if (uniqueName.includes(input) && !shownNames.has(uniqueName)) {
+            shownNames.add(uniqueName);
+
+            let item = document.createElement("div");
+            item.textContent = hallName;
+
+            item.onclick = function() {
+                searchInput.value = hallName;
+                suggestions.style.display = "none";
+                searchHalls();
+                viewDetails(hallName);
+            };
+
+            suggestions.appendChild(item);
+        }
+    });
+
+    suggestions.style.display =
+        suggestions.children.length > 0 ? "block" : "none";
+
+    searchHalls();
 }
 
-
-        function viewDetails(hallName) {
-
-            window.location.href =
-                "halldetails.php?hall=" +
-                encodeURIComponent(hallName);
-
-        }
-
+searchInput.addEventListener("focus", showHallSuggestions);
+searchInput.addEventListener("input", showHallSuggestions);
+function viewDetails(hallName) {
+    window.location.href =
+        "halldetails.php?hall=" + encodeURIComponent(hallName);
+}
 
         function viewAllHalls() {
 
