@@ -1,3 +1,4 @@
+
 <?php
 session_start();
 include "db.php";
@@ -37,6 +38,7 @@ $delete_requests = mysqli_stmt_get_result($delete_stmt);
 ?>
 
 <h2>Welcome, <?php echo htmlspecialchars($owner_name); ?>!</h2>
+
 <a href="owner_add_hall.php">Add Hall</a><br><br>
 
 <a href="owner_bookings.php">View Bookings</a><br><br>
@@ -50,6 +52,7 @@ $delete_requests = mysqli_stmt_get_result($delete_stmt);
 <?php
 if (mysqli_num_rows($result) > 0) {
 ?>
+
 
 <div style="overflow-x:auto;">
 
@@ -70,6 +73,7 @@ if (mysqli_num_rows($result) > 0) {
     <tr>
         <td><?php echo htmlspecialchars($hall["hall_name"]); ?></td>
 
+    
         <td><?php echo htmlspecialchars($hall["location"]); ?></td>
 
         <td><?php echo htmlspecialchars($hall["capacity"]); ?></td>
@@ -143,4 +147,6 @@ if (mysqli_num_rows($result) > 0) {
 } else {
     echo "You have not added any halls yet.";
 }
+
+mysqli_stmt_close($stmt);
 ?>

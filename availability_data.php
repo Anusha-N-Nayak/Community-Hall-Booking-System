@@ -17,7 +17,38 @@ $start_date = sprintf("%04d-%02d-01", $year, $month);
 $end_date = date("Y-m-t", strtotime($start_date));
 
 
-// 1. Fetch confirmed bookings
+// 1. Check hall availability and fetch deactivation date
+
+$hall_sql = "SELECT hall_id, deactivation_date
+             FROM halls
+             WHERE hall_id = ?
+             AND LOWER(TRIM(COALESCE(hall_status, ''))) != 'inactive'
+             AND (
+                 deactivation_date IS NULL
+                 OR deactivation_date > CURDATE()
+             )";
+
+$hall_stmt = mysqli_prepare($conn, $hall_sql);
+
+mysqli_stmt_bind_param($hall_stmt, "i", $hall_id);
+
+mysqli_stmt_execute($hall_stmt);
+
+$hall_result = mysqli_stmt_get_result($hall_stmt);
+
+$hall = mysqli_fetch_assoc($hall_result);
+
+mysqli_stmt_close($hall_stmt);
+
+if (!$hall) {
+    echo json_encode([
+        "error" => "This hall is currently unavailable."
+    ]);
+    exit;
+}
+
+
+// 2. Fetch confirmed bookings
 
 $sql = "SELECT event_date, start_time, end_time
         FROM bookings
@@ -48,7 +79,7 @@ while ($row = mysqli_fetch_assoc($result)) {
 mysqli_stmt_close($stmt);
 
 
-// 2. Fetch maintenance dates for this hall
+// 3. Fetch maintenance dates for this hall
 
 $maintenance_sql = "SELECT maintenance_date, reason
                     FROM hall_maintenance
@@ -78,11 +109,12 @@ while ($row = mysqli_fetch_assoc($maintenance_result)) {
 mysqli_stmt_close($maintenance_stmt);
 
 
-// 3. Send bookings and maintenance information
+// 4. Send all availability information
 
 echo json_encode([
     "bookings" => $bookings,
-    "maintenance" => $maintenance
+    "maintenance" => $maintenance,
+    "deactivation_date" => $hall["deactivation_date"]
 ]);
 
 ?>

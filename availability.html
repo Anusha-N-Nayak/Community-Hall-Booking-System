@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -111,11 +112,12 @@
             color: #a00000;
             cursor: not-allowed;
         }
+
         .partial {
-    background: #ffe0a3;
-    color: #875000;
-    cursor: pointer;
-}
+            background: #ffe0a3;
+            color: #875000;
+            cursor: pointer;
+        }
 
         .selected {
             background: #2878d0;
@@ -127,10 +129,19 @@
             color: #888;
             cursor: not-allowed;
         }
+
         .maintenance {
             background: #ffd9a8;
             color: #8a3b00;
             cursor: pointer;
+        }
+
+        /* Dates from scheduled deactivation onwards */
+        .deactivated {
+            background: #d5d5d5;
+            color: #777;
+            cursor: not-allowed;
+            text-decoration: line-through;
         }
 
         .legend {
@@ -244,9 +255,7 @@
         </div>
 
 
-        <div class="calendar" id="calendar">
-
-        </div>
+        <div class="calendar" id="calendar"></div>
 
 
         <div class="legend">
@@ -254,10 +263,14 @@
             <span class="available">Available</span>
 
             <span class="partial">Partially Booked</span>
+
             <span class="booked">Booked</span>
-             <span class="maintenance">Under Maintenance</span>
+
+            <span class="maintenance">Under Maintenance</span>
+
+            <span class="deactivated">Hall Closed</span>
+
             <span class="selected">Selected</span>
-            
 
         </div>
 
@@ -270,35 +283,37 @@
 
         </div>
 
-    <div id="maintenanceMessage" style="
-    display:none;
-    margin:20px auto;
-    max-width:600px;
-    padding:15px;
-    background:#fff0e6;
-    border:1px solid #e67e22;
-    border-radius:8px;
-    color:#8a3b00;
-    text-align:center;
-    font-weight:bold;
-">
-</div>
+
+        <div id="maintenanceMessage" style="
+            display:none;
+            margin:20px auto;
+            max-width:600px;
+            padding:15px;
+            background:#fff0e6;
+            border:1px solid #e67e22;
+            border-radius:8px;
+            color:#8a3b00;
+            text-align:center;
+            font-weight:bold;
+        "></div>
+
+
         <div id="timeSlots" style="
-    display:none;
-    margin:25px auto;
-    max-width:500px;
-    padding:20px;
-    background:#f2f5f9;
-    border-radius:10px;
-">
+            display:none;
+            margin:25px auto;
+            max-width:500px;
+            padding:20px;
+            background:#f2f5f9;
+            border-radius:10px;
+        ">
 
-    <h3 style="color:#142d4e; margin-bottom:15px;">
-        Available Time Slots
-    </h3>
+            <h3 style="color:#142d4e; margin-bottom:15px;">
+                Available Time Slots
+            </h3>
 
-    <div id="slotList"></div>
+            <div id="slotList"></div>
 
-</div>
+        </div>
 
 
         <div class="buttons">
@@ -323,12 +338,14 @@
         </p>
 
     </footer>
-    <script>
 
 
-    const params = new URLSearchParams(window.location.search);
+<script>
+
+const params = new URLSearchParams(window.location.search);
 
 const hall = params.get("hall") || localStorage.getItem("selectedHall");
+
 const hallId = Number(
     params.get("hall_id") || localStorage.getItem("selectedHallId")
 );
@@ -337,38 +354,70 @@ document.getElementById("hallName").innerText =
     hall || "Community Hall";
 
 let today = new Date();
+
 let currentMonth = today.getMonth();
 let currentYear = today.getFullYear();
 
 let selectedDay = null;
 let selectedSlot = null;
+
 let bookings = [];
 let maintenance = [];
 
+// NEW: Store the scheduled deactivation date
+let deactivationDate = null;
+
+
 const slots = {
+
     morning: ["08:00:00", "12:00:00", "Morning (8 AM - 12 PM)"],
+
     afternoon: ["12:00:00", "16:00:00", "Afternoon (12 PM - 4 PM)"],
+
     evening: ["16:00:00", "22:00:00", "Evening (4 PM - 10 PM)"],
+
     full_day: ["08:00:00", "22:00:00", "Full Day (8 AM - 10 PM)"]
+
 };
 
+
 function dateKey(year, month, day) {
+
     return year + "-" +
         String(month + 1).padStart(2, "0") + "-" +
         String(day).padStart(2, "0");
+
 }
+
 
 function isPast(date) {
+
     return new Date(date + "T00:00:00") <
         new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
 }
+
+
+// NEW: Check whether date falls on or after deactivation
+function isDeactivatedDate(date) {
+
+    return deactivationDate !== null &&
+        date >= deactivationDate;
+
+}
+
 
 function timeToMinutes(time) {
+
     const parts = time.split(":");
+
     return Number(parts[0]) * 60 + Number(parts[1]);
+
 }
 
+
 function isSlotBooked(date, slot) {
+
     const start = timeToMinutes(slots[slot][0]);
     const end = timeToMinutes(slots[slot][1]);
 
@@ -382,8 +431,12 @@ function isSlotBooked(date, slot) {
         const bookedEnd = timeToMinutes(booking.end_time);
 
         return bookedStart < end && bookedEnd > start;
+
     });
+
 }
+
+
 function getMaintenanceForDate(date) {
 
     return maintenance.find(item =>
@@ -391,9 +444,12 @@ function getMaintenanceForDate(date) {
     );
 
 }
+
+
 function generateCalendar() {
 
     const calendar = document.getElementById("calendar");
+
     calendar.innerHTML = "";
 
     const monthNames = [
@@ -412,105 +468,165 @@ function generateCalendar() {
     const totalDays =
         new Date(currentYear, currentMonth + 1, 0).getDate();
 
+
     ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
         .forEach(day => {
+
             const div = document.createElement("div");
+
             div.className = "day-name";
+
             div.innerText = day;
+
             calendar.appendChild(div);
+
         });
 
+
     for (let i = 0; i < firstDay; i++) {
+
         calendar.appendChild(document.createElement("div"));
+
     }
+
 
     for (let day = 1; day <= totalDays; day++) {
 
         const date = document.createElement("div");
+
         date.className = "date";
+
         date.innerText = day;
 
         const key = dateKey(currentYear, currentMonth, day);
 
         const morning = isSlotBooked(key, "morning");
+
         const afternoon = isSlotBooked(key, "afternoon");
+
         const evening = isSlotBooked(key, "evening");
 
-const bookedCount =
-    [morning, afternoon, evening].filter(Boolean).length;
+        const bookedCount =
+            [morning, afternoon, evening].filter(Boolean).length;
 
-// Check whether this date has maintenance
-const maintenanceInfo = getMaintenanceForDate(key);
+        const maintenanceInfo = getMaintenanceForDate(key);
 
-// Display the correct date status
-if (isPast(key)) {
-    date.classList.add("past");
-} else if (maintenanceInfo) {
-    date.classList.add("maintenance");
-} else if (bookedCount === 3) {
-    date.classList.add("booked");
-} else if (bookedCount > 0) {
-    date.classList.add("partial");
-} else {
-    date.classList.add("available");
-}
+        // Check scheduled closure
+        const isClosed = isDeactivatedDate(key);
 
-if (selectedDay === key && !maintenanceInfo) {
-    date.classList.add("selected");
-}
 
-// Allow users to select maintenance dates to see the warning
-if (!isPast(key) && (maintenanceInfo || bookedCount < 3)) {
+        // Display correct date status
 
-  date.onclick = function() {
+        if (isPast(key)) {
 
-    selectedDay = key;
-    selectedSlot = null;
+            date.classList.add("past");
 
-    document.getElementById("selectedDate").innerText =
-        "Selected Date: " + key;
+        } else if (isClosed) {
 
-    const message = document.getElementById("maintenanceMessage");
-    const confirmButton = document.querySelector(".confirm");
+            date.classList.add("deactivated");
 
-    if (maintenanceInfo) {
+        } else if (maintenanceInfo) {
 
-        message.style.display = "block";
+            date.classList.add("maintenance");
 
-        message.textContent =
-            "This hall is under maintenance on " + key + ". " +
-            (maintenanceInfo.reason || "Please select another date.");
+        } else if (bookedCount === 3) {
 
-        document.getElementById("timeSlots").style.display = "none";
+            date.classList.add("booked");
 
-        // Hide Confirm Date immediately
-        confirmButton.style.display = "none";
+        } else if (bookedCount > 0) {
 
-    } else {
+            date.classList.add("partial");
 
-        message.style.display = "none";
+        } else {
 
-        // Show Confirm Date for normal dates
-        confirmButton.style.display = "inline-block";
+            date.classList.add("available");
 
-        showTimeSlots(key);
-    }
+        }
 
-    generateCalendar();
-};
-}
+
+        if (
+            selectedDay === key &&
+            !maintenanceInfo &&
+            !isClosed
+        ) {
+
+            date.classList.add("selected");
+
+        }
+
+
+        // Allow selection only before deactivation
+
+        if (
+            !isPast(key) &&
+            !isClosed &&
+            (maintenanceInfo || bookedCount < 3)
+        ) {
+
+            date.onclick = function() {
+
+                selectedDay = key;
+
+                selectedSlot = null;
+
+                document.getElementById("selectedDate").innerText =
+                    "Selected Date: " + key;
+
+                const message =
+                    document.getElementById("maintenanceMessage");
+
+                const confirmButton =
+                    document.querySelector(".confirm");
+
+
+                if (maintenanceInfo) {
+
+                    message.style.display = "block";
+
+                    message.textContent =
+                        "This hall is under maintenance on " + key + ". " +
+                        (maintenanceInfo.reason ||
+                            "Please select another date.");
+
+                    document.getElementById("timeSlots").style.display =
+                        "none";
+
+                    confirmButton.style.display = "none";
+
+                } else {
+
+                    message.style.display = "none";
+
+                    confirmButton.style.display = "inline-block";
+
+                    showTimeSlots(key);
+
+                }
+
+                generateCalendar();
+
+            };
+
+        }
+
 
         calendar.appendChild(date);
+
     }
+
 }
+
 
 function showTimeSlots(date) {
 
     const section = document.getElementById("timeSlots");
+
     const list = document.getElementById("slotList");
 
     section.style.display = "block";
+
     list.innerHTML = "";
+
 
     Object.keys(slots).forEach(slot => {
 
@@ -524,19 +640,24 @@ function showTimeSlots(date) {
             "background:white;border-radius:6px;gap:8px;";
 
         const name = document.createElement("span");
+
         name.innerText = slots[slot][2];
 
         const button = document.createElement("button");
 
         button.type = "button";
+
         button.style.cssText =
             "padding:9px 12px;border:0;border-radius:5px;" +
             "color:white;min-width:105px;";
 
+
         if (booked) {
 
             button.innerText = "Booked";
+
             button.style.background = "#c62828";
+
             button.disabled = true;
 
         } else {
@@ -548,24 +669,39 @@ function showTimeSlots(date) {
                 selectedSlot === slot ? "#2878d0" : "#239b56";
 
             button.onclick = function() {
+
                 selectedSlot = slot;
+
                 showTimeSlots(date);
+
             };
+
         }
 
+
         row.appendChild(name);
+
         row.appendChild(button);
+
         list.appendChild(row);
+
     });
+
 }
+
 
 async function loadBookings() {
 
     if (!hallId) {
+
         alert("Please select a valid hall.");
+
         window.location.href = "dashboard.php";
+
         return;
+
     }
+
 
     try {
 
@@ -577,103 +713,201 @@ async function loadBookings() {
 
         const data = await response.json();
 
+
         if (data.error) {
+
             alert(data.error);
+
             return;
+
         }
 
+
         bookings = data.bookings || [];
+
         maintenance = data.maintenance || [];
-        console.log("Bookings received:",bookings);
+
+
+        // NEW: Receive scheduled deactivation date from PHP
+        deactivationDate = data.deactivation_date || null;
+
+
+        console.log("Bookings received:", bookings);
+
         console.log("Maintenance received:", maintenance);
+
+        console.log("Deactivation date:", deactivationDate);
+
 
         generateCalendar();
 
-        if (selectedDay) {
+
+        if (selectedDay && !isDeactivatedDate(selectedDay)) {
+
             showTimeSlots(selectedDay);
+
+        } else if (selectedDay) {
+
+            selectedDay = null;
+
+            selectedSlot = null;
+
+            document.getElementById("selectedDate").innerText =
+                "This hall is unavailable on the selected date.";
+
+            document.getElementById("timeSlots").style.display = "none";
+
         }
 
+
     } catch (error) {
+
         alert("Unable to load availability. Please try again.");
+
         console.error(error);
+
     }
+
 }
+
 
 function changeMonth(value) {
 
     currentMonth += value;
 
     if (currentMonth < 0) {
+
         currentMonth = 11;
+
         currentYear--;
+
     }
 
     if (currentMonth > 11) {
+
         currentMonth = 0;
+
         currentYear++;
+
     }
 
+
     selectedDay = null;
+
     selectedSlot = null;
+
 
     document.getElementById("selectedDate").innerText =
         "Please select a date.";
 
     document.getElementById("timeSlots").style.display = "none";
+
+    document.getElementById("maintenanceMessage").style.display = "none";
+
     document.querySelector(".confirm").style.display = "inline-block";
+
+
     loadBookings();
+
 }
+
 
 function confirmDate() {
 
     if (!selectedDay) {
+
         alert("Please select a date.");
+
         return;
+
     }
-    // Prevent booking on a maintenance date
-const maintenanceInfo = getMaintenanceForDate(selectedDay);
 
-if (maintenanceInfo) {
 
-    const message = document.getElementById("maintenanceMessage");
+    // NEW: Final protection against scheduled closure
+    if (isDeactivatedDate(selectedDay)) {
 
-    message.style.display = "block";
+        alert(
+            "This hall is unavailable from " +
+            deactivationDate +
+            ". Please select another date."
+        );
 
-    message.textContent =
-        "This hall is under maintenance on " + selectedDay +
-        ". Please select another date.";
+        selectedDay = null;
 
-    document.getElementById("timeSlots").style.display = "none";
-    document.querySelector(".confirm").style.display = "none";
-    selectedSlot = null;
+        selectedSlot = null;
 
-    alert("This hall is under maintenance on this date. Please select another date.");
+        document.getElementById("timeSlots").style.display = "none";
 
-    return;
-}
+        return;
+
+    }
+
+
+    const maintenanceInfo = getMaintenanceForDate(selectedDay);
+
+
+    if (maintenanceInfo) {
+
+        const message =
+            document.getElementById("maintenanceMessage");
+
+        message.style.display = "block";
+
+        message.textContent =
+            "This hall is under maintenance on " + selectedDay +
+            ". Please select another date.";
+
+        document.getElementById("timeSlots").style.display = "none";
+
+        document.querySelector(".confirm").style.display = "none";
+
+        selectedSlot = null;
+
+        alert(
+            "This hall is under maintenance on this date. " +
+            "Please select another date."
+        );
+
+        return;
+
+    }
+
 
     if (!selectedSlot) {
+
         alert("Please select an available time slot.");
+
         return;
+
     }
 
+
     localStorage.setItem("selectedHall", hall);
+
     localStorage.setItem("selectedHallId", hallId);
+
     localStorage.setItem("bookingDate", selectedDay);
+
 
     window.location.href =
         "booking.html?hall=" + encodeURIComponent(hall) +
         "&hall_id=" + hallId +
         "&date=" + encodeURIComponent(selectedDay) +
         "&time=" + selectedSlot;
+
 }
+
 
 function goBack() {
+
     window.location.href =
         "halldetails.php?hall=" + encodeURIComponent(hall);
+
 }
 
+
 loadBookings();
+
 </script>
 
 </body>

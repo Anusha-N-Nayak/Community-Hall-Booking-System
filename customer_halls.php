@@ -1,7 +1,13 @@
-<?php
+php<?
 include "db.php";
-
-$sql = "SELECT * FROM halls Where hall_status = 'Approved' ORDER BY hall_id ASC";
+$sql = "SELECT *
+        FROM halls
+        WHERE LOWER(TRIM(COALESCE(hall_status, ''))) = 'approved'
+        AND (
+            deactivation_date IS NULL
+            OR deactivation_date > CURDATE()
+        )
+        ORDER BY hall_id ASC";
 $result = mysqli_query($conn, $sql);
 
 if (!$result) {

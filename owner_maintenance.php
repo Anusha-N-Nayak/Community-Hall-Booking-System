@@ -18,7 +18,7 @@ if ($hall_id <= 0) {
 }
 
 // Verify that this hall belongs to the logged-in owner
-$hall_sql = "SELECT hall_id, hall_name, location
+$hall_sql = "SELECT hall_id, hall_name, location, hall_status, deactivation_date
              FROM halls
              WHERE hall_id = ? AND owner_id = ?";
 
@@ -85,7 +85,26 @@ function hasActiveBooking($conn, $hall_id, $date) {
 
     return $exists;
 }
+function getLastActiveBookingDate($conn, $hall_id) {
 
+    $sql = "SELECT MAX(event_date) AS last_date
+            FROM bookings
+            WHERE hall_id = ?
+            AND event_date >= CURDATE()
+            AND LOWER(TRIM(COALESCE(booking_status, '')))
+            NOT IN ('cancelled', 'canceled', 'expired', 'rejected')";
+
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "i", $hall_id);
+    mysqli_stmt_execute($stmt);
+
+    $result = mysqli_stmt_get_result($stmt);
+    $row = mysqli_fetch_assoc($result);
+
+    mysqli_stmt_close($stmt);
+
+    return $row["last_date"] ?? null;
+}
 
 // Validate date format
 function validMaintenanceDate($date) {
@@ -97,11 +116,13 @@ function validMaintenanceDate($date) {
 }
 
 
+
 // Process owner actions
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $action = $_POST["action"] ?? "";
 
+    // Validate CSRF token before processing ANY action
     if (!hash_equals($token, $_POST["csrf_token"] ?? "")) {
 
         $message = "Invalid request. Please refresh the page.";
@@ -111,8 +132,92 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $date = trim($_POST["maintenance_date"] ?? "");
         $reason = trim($_POST["reason"] ?? "");
 
+        // DEACTIVATE HALL
+        if ($action === "deactivate") {
+
+            $lastBookingDate = getLastActiveBookingDate($conn, $hall_id);
+
+            if ($lastBookingDate) {
+
+                // Deactivation starts the day after the last active booking
+                $deactivationDate = date(
+                    "Y-m-d",
+                    strtotime($lastBookingDate . " +1 day")
+                );
+
+            } else {
+
+                // No upcoming active bookings: deactivate immediately
+                $deactivationDate = date("Y-m-d");
+            }
+
+            $update_sql = "UPDATE halls
+                           SET deactivation_date = ?
+                           WHERE hall_id = ? AND owner_id = ?";
+
+            $update_stmt = mysqli_prepare($conn, $update_sql);
+
+            mysqli_stmt_bind_param(
+                $update_stmt,
+                "sii",
+                $deactivationDate,
+                $hall_id,
+                $owner_id
+            );
+
+            if (mysqli_stmt_execute($update_stmt)) {
+
+                $hall["deactivation_date"] = $deactivationDate;
+
+                $message = "Hall deactivation scheduled successfully.";
+                $messageType = "success";
+
+            } else {
+
+                $message = "Failed to schedule hall deactivation.";
+            }
+
+            mysqli_stmt_close($update_stmt);
+        }
+
+        // REACTIVATE HALL
+        elseif ($action === "reactivate") {
+
+            $status_sql = "UPDATE halls
+                           SET deactivation_date = NULL,
+                               hall_status = CASE
+                                   WHEN LOWER(TRIM(COALESCE(hall_status, ''))) = 'inactive'
+                                   THEN 'Pending'
+                                   ELSE hall_status
+                               END
+                           WHERE hall_id = ? AND owner_id = ?";
+
+            $status_stmt = mysqli_prepare($conn, $status_sql);
+
+            mysqli_stmt_bind_param(
+                $status_stmt,
+                "ii",
+                $hall_id,
+                $owner_id
+            );
+
+            if (mysqli_stmt_execute($status_stmt)) {
+
+                $hall["deactivation_date"] = null;
+
+                $message = "Scheduled deactivation cancelled. Hall availability restored.";
+                $messageType = "success";
+
+            } else {
+
+                $message = "Unable to reactivate this hall. Please try again.";
+            }
+
+            mysqli_stmt_close($status_stmt);
+        }
+
         // ADD MAINTENANCE
-        if ($action === "add") {
+        elseif ($action === "add") {
 
             if (!validMaintenanceDate($date)) {
 
@@ -152,7 +257,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 mysqli_stmt_close($stmt);
             }
         }
-
 
         // EDIT MAINTENANCE
         elseif ($action === "update") {
@@ -224,7 +328,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
         }
 
-
         // DELETE MAINTENANCE
         elseif ($action === "delete") {
 
@@ -255,9 +358,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             mysqli_stmt_close($delete_stmt);
         }
-
     }
 }
+
 
 
 // Fetch maintenance records for this hall
@@ -387,6 +490,27 @@ button, .back {
     background: #239b56;
 }
 
+.deactivate {
+    background: #c0392b;
+}
+
+.reactivate {
+    background: #239b56;
+}
+
+.status-box {
+    background: #f5f7fa;
+    border: 1px solid #d9e1ea;
+    border-radius: 8px;
+    padding: 18px;
+    margin: 20px 0 25px;
+}
+
+.status-label {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
 .edit {
     background: #2878d0;
 }
@@ -452,6 +576,94 @@ button, .back {
     </div>
 
 <?php } ?>
+
+
+<!-- HALL DEACTIVATION / REACTIVATION SECTION -->
+
+<?php
+$scheduledDate = $hall["deactivation_date"] ?? null;
+$isScheduled = !empty($scheduledDate);
+$isUnavailable = $isScheduled && $scheduledDate <= date("Y-m-d");
+?>
+
+<div class="status-box">
+
+
+    <?php if ($isScheduled) { ?>
+
+        <?php if ($isUnavailable) { ?>
+
+            <p>This hall is currently unavailable.</p>
+
+        <?php } else { ?>
+
+            <p>
+                Hall deactivation is scheduled for:
+                <strong>
+                    <?php echo date("d F Y", strtotime($scheduledDate)); ?>
+                </strong>
+            </p>
+
+        <?php } ?>
+
+        <form method="POST" action="owner_maintenance.php"
+              onsubmit="return confirm('Cancel scheduled hall deactivation and restore availability?');">
+
+            <input type="hidden" name="hall_id" value="<?php echo $hall_id; ?>">
+            <input type="hidden" name="csrf_token"
+                   value="<?php echo htmlspecialchars($token); ?>">
+            <input type="hidden" name="action" value="reactivate">
+
+            <button type="submit" class="reactivate">
+                Reactivate Hall
+            </button>
+
+        </form>
+
+    <?php } elseif (strcasecmp(trim($hall["hall_status"] ?? ""), "Inactive") === 0) { ?>
+
+        <p>This hall is currently inactive.</p>
+
+        <form method="POST" action="owner_maintenance.php"
+              onsubmit="return confirm('Reactivate this hall?');">
+
+            <input type="hidden" name="hall_id" value="<?php echo $hall_id; ?>">
+            <input type="hidden" name="csrf_token"
+                   value="<?php echo htmlspecialchars($token); ?>">
+            <input type="hidden" name="action" value="reactivate">
+
+            <button type="submit" class="reactivate">
+                Reactivate Hall
+            </button>
+
+        </form>
+
+    <?php } else { ?>
+
+        <p>
+            Use this when the hall is temporarily unavailable for a long time,
+            such as during construction or renovations.
+        </p>
+
+        <form method="POST" action="owner_maintenance.php"
+              onsubmit="return confirm('Deactivate this hall? It will be scheduled to become unavailable after its existing active bookings. Continue?');">
+
+            <input type="hidden" name="hall_id" value="<?php echo $hall_id; ?>">
+            <input type="hidden" name="csrf_token"
+                   value="<?php echo htmlspecialchars($token); ?>">
+            <input type="hidden" name="action" value="deactivate">
+
+            <button type="submit" class="deactivate">
+                Deactivate Hall
+            </button>
+
+        </form>
+
+    <?php } ?>
+
+</div>
+     
+
 
 
 <h3>

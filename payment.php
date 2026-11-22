@@ -1,3 +1,4 @@
+
 <?php
 session_start();
 include "db.php";
@@ -13,8 +14,15 @@ if ($_SERVER["REQUEST_METHOD"] != "POST") {
 $user_id = $_SESSION["user_id"];
 $booking_id = (int)$_POST["booking_id"];
 
-$sql = "SELECT * FROM bookings
-        WHERE booking_id = ? AND user_id = ?";
+if ($booking_id <= 0) {
+    die("Invalid booking.");
+}
+
+// Fetch booking and its hall status
+$sql = "SELECT b.*, h.hall_status
+        FROM bookings b
+        INNER JOIN halls h ON b.hall_id = h.hall_id
+        WHERE b.booking_id = ? AND b.user_id = ?";
 
 $stmt = mysqli_prepare($conn, $sql);
 mysqli_stmt_bind_param($stmt, "ii", $booking_id, $user_id);
@@ -23,8 +31,15 @@ mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
 $booking = mysqli_fetch_assoc($result);
 
+mysqli_stmt_close($stmt);
+
 if (!$booking) {
     die("Booking not found.");
+}
+
+// Prevent payment for an inactive hall
+if (strcasecmp(trim($booking["hall_status"] ?? ""), "Inactive") == 0) {
+    die("This hall is currently unavailable due to maintenance. Payment cannot be completed.");
 }
 
 if ($booking["booking_status"] != "Pending Payment") {
