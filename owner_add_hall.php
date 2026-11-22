@@ -53,10 +53,27 @@ if (isset($_FILES["image"]) && $_FILES["image"]["error"] == 0) {
     );
 
     if (mysqli_stmt_execute($stmt)) {
-        echo "Hall added successfully!";
-    } else {
-        echo "Failed to add hall.";
-    }
+    echo "
+    <div style='text-align:center; margin-top:100px; font-family:Arial;'>
+
+        <h2 style='color:green;'>Hall submitted successfully!</h2>
+
+        <p>Your hall is waiting for admin approval.</p>
+        <p>It will be visible to customers after approval.</p>
+
+        <br>
+
+        <a href='owner_dashboard.php'
+           style='background:#2563eb; color:white; padding:12px 20px;
+           text-decoration:none; border-radius:6px;'>
+           Back to Owner Dashboard
+        </a>
+
+    </div>";
+    exit;
+} else {
+    echo "Failed to add hall.";
+}
 }
 ?>
 

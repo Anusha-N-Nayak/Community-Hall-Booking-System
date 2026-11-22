@@ -6,137 +6,342 @@ if (!isset($_SESSION["admin_id"])) {
     header("Location: admin_login.php");
     exit();
 }
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-// Dashboard counts
-$halls = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM halls"));
-$bookings = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM bookings"));
-$users = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM users"));
-$feedback = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM feedback"));
-?><!DOCTYPE html><html>
+    // Approve or reject hall edit request
+    if (isset($_POST["request_id"], $_POST["edit_action"])) {
+
+        $request_id = (int)$_POST["request_id"];
+        $action = $_POST["edit_action"];
+
+        if (in_array($action, ["Approved", "Rejected"])) {
+
+            $sql = "SELECT * FROM hall_edit_requests
+                    WHERE request_id = ?
+                    AND request_status = 'Pending'";
+
+            $stmt = mysqli_prepare($conn, $sql);
+            mysqli_stmt_bind_param($stmt, "i", $request_id);
+            mysqli_stmt_execute($stmt);
+
+            $edit_result = mysqli_stmt_get_result($stmt);
+            $request = mysqli_fetch_assoc($edit_result);
+
+            if ($request) {
+
+                if ($action == "Approved") {
+
+                    $sql = "UPDATE halls SET
+                            hall_name = ?,
+                            location = ?,
+                            capacity = ?,
+                            price = ?,
+                            facilities = ?,
+                            description = ?,
+                            image = ?
+                            WHERE hall_id = ?";
+
+                    $stmt = mysqli_prepare($conn, $sql);
+
+                    mysqli_stmt_bind_param(
+                        $stmt,
+                        "ssidsssi",
+                        $request["hall_name"],
+                        $request["location"],
+                        $request["capacity"],
+                        $request["price"],
+                        $request["facilities"],
+                        $request["description"],
+                        $request["image"],
+                        $request["hall_id"]
+                    );
+
+                    if (!mysqli_stmt_execute($stmt)) {
+                        die("Hall Update Error: " . mysqli_error($conn));
+                    }
+                }
+
+                $sql = "UPDATE hall_edit_requests
+                        SET request_status = ?
+                        WHERE request_id = ?";
+
+                $stmt = mysqli_prepare($conn, $sql);
+                mysqli_stmt_bind_param($stmt, "si", $action, $request_id);
+                mysqli_stmt_execute($stmt);
+            }
+        }
+    }
+    // Approve or reject hall deletion requests
+elseif (isset($_POST["delete_request_id"], $_POST["delete_action"])) {
+
+    $request_id = (int)$_POST["delete_request_id"];
+    $action = $_POST["delete_action"];
+
+    if (in_array($action, ["Approved", "Rejected"])) {
+
+        $sql = "SELECT * FROM hall_delete_requests
+                WHERE request_id = ?
+                AND request_status = 'Pending'";
+
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, "i", $request_id);
+        mysqli_stmt_execute($stmt);
+
+        $result = mysqli_stmt_get_result($stmt);
+        $request = mysqli_fetch_assoc($result);
+
+        if ($request) {
+
+            if ($action == "Approved") {
+
+                $sql = "UPDATE halls
+                        SET hall_status = 'Deleted'
+                        WHERE hall_id = ?";
+
+                $stmt = mysqli_prepare($conn, $sql);
+                mysqli_stmt_bind_param($stmt, "i", $request["hall_id"]);
+                mysqli_stmt_execute($stmt);
+            }
+
+            $sql = "UPDATE hall_delete_requests
+                    SET request_status = ?
+                    WHERE request_id = ?";
+
+            $stmt = mysqli_prepare($conn, $sql);
+            mysqli_stmt_bind_param($stmt, "si", $action, $request_id);
+            mysqli_stmt_execute($stmt);
+        }
+    }
+}
+
+    // Approve or reject newly added halls
+    elseif (isset($_POST["hall_id"], $_POST["status"])) {
+
+        $hall_id = (int)$_POST["hall_id"];
+        $status = $_POST["status"];
+
+        if (in_array($status, ["Approved", "Rejected"])) {
+
+            $sql = "UPDATE halls
+                    SET hall_status = ?
+                    WHERE hall_id = ?";
+
+            $stmt = mysqli_prepare($conn, $sql);
+            mysqli_stmt_bind_param($stmt, "si", $status, $hall_id);
+            mysqli_stmt_execute($stmt);
+        }
+    }
+
+    header("Location: admin_dashboard.php");
+    exit();
+}
+
+
+$sql = "SELECT halls.*, owners.phone AS owner_phone
+        FROM halls
+        JOIN owners ON halls.owner_id = owners.owner_id
+        ORDER BY halls.hall_id DESC";
+
+$result = mysqli_query($conn, $sql);
+if (!$result) {
+    die("Database Error: " . mysqli_error($conn));
+}
+$edit_sql = "SELECT hall_edit_requests.*,
+                    halls.hall_name AS current_hall_name,
+                    owners.phone AS owner_phone
+             FROM hall_edit_requests
+             JOIN halls ON hall_edit_requests.hall_id = halls.hall_id
+             JOIN owners ON hall_edit_requests.owner_id = owners.owner_id
+             WHERE hall_edit_requests.request_status = 'Pending'
+             ORDER BY hall_edit_requests.request_id DESC";
+$edit_result = mysqli_query($conn, $edit_sql);
+
+if (!$edit_result) {
+    die("Edit Request Error: " . mysqli_error($conn));
+}
+$delete_sql = "SELECT hall_delete_requests.*,
+                      halls.hall_name,
+                      owners.phone AS owner_phone
+               FROM hall_delete_requests
+               JOIN halls ON hall_delete_requests.hall_id = halls.hall_id
+               JOIN owners ON hall_delete_requests.owner_id = owners.owner_id
+               WHERE hall_delete_requests.request_status = 'Pending'
+               ORDER BY hall_delete_requests.request_id DESC";
+
+$delete_result = mysqli_query($conn, $delete_sql);
+
+if (!$delete_result) {
+    die("Delete Request Error: " . mysqli_error($conn));
+}
+
+echo "Total Halls: " . mysqli_num_rows($result);
+?>
+
+<!DOCTYPE html>
+<html>
 <head>
-    <title>Admin Dashboard</title><style>
-    * {
-        box-sizing: border-box;
-        font-family: Arial, sans-serif;
-    }
+    <title>Admin Dashboard</title>
 
-    body {
-        margin: 0;
-        background: #f2f5f9;
-    }
+    <style>
+        .section-heading {
+            background: #1e3a8a;
+            color: white;
+            padding: 14px 20px;
+            margin: 30px 0 20px;
+            border-radius: 8px;
+            font-size: 21px;
+            font-weight: bold;
+            border-left: 5px solid #60a5fa;
+        }
+    </style>
 
-    header {
-        background: #243b55;
-        color: white;
-        padding: 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
+</head>
+<body>
 
-    .container {
-        padding: 25px;
-    }
+<div style="display:flex; justify-content:space-between;
+            align-items:center; margin:20px;">
 
-    .cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 20px;
-        margin-top: 25px;
-    }
+    <h1>Admin Dashboard</h1>
 
-    .card {
-        background: white;
-        padding: 25px;
-        border-radius: 10px;
-        box-shadow: 0 2px 8px #ddd;
-        text-align: center;
-    }
-
-    .card h2 {
-        color: #243b55;
-        font-size: 32px;
-    }
-
-    .menu {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 15px;
-        margin-top: 30px;
-    }
-
-    .menu a {
-        background: #243b55;
-        color: white;
-        padding: 18px;
-        text-decoration: none;
-        border-radius: 8px;
-        text-align: center;
-    }
-
-    .menu a:hover {
-        background: #41658a;
-    }
-
-    .logout {
-        color: white;
-        text-decoration: none;
-        background: #d9534f;
-        padding: 10px 16px;
-        border-radius: 5px;
-    }
-</style>
-
-</head><body><header>
-    <h2>Admin Dashboard</h2><div>
-    Welcome, <?php echo htmlspecialchars($_SESSION["admin_username"]); ?>
-    &nbsp;
-    <a class="logout" href="admin_logout.php">Logout</a>
-</div>
-
-</header><div class="container"><h2>Dashboard Overview</h2>
-
-<div class="cards">
-
-    <div class="card">
-        <h3>Total Halls</h3>
-        <h2><?php echo $halls["total"]; ?></h2>
-    </div>
-
-    <div class="card">
-        <h3>Total Bookings</h3>
-        <h2><?php echo $bookings["total"]; ?></h2>
-    </div>
-
-    <div class="card">
-        <h3>Total Users</h3>
-        <h2><?php echo $users["total"]; ?></h2>
-    </div>
-
-    <div class="card">
-        <h3>Total Feedback</h3>
-        <h2><?php echo $feedback["total"]; ?></h2>
-    </div>
+    <a href="admin_logout.php"
+       style="background:#dc2626;
+              color:white;
+              padding:12px 22px;
+              text-decoration:none;
+              border-radius:6px;
+              font-weight:bold;">
+        Logout
+    </a>
 
 </div>
 
-<h2>Manage System</h2>
+<h2>All Community Halls</h2>
 
-<div class="menu">
+<table border="1" cellpadding="10" cellspacing="0"
+       style="width:100%; border-collapse:collapse; text-align:center;">
 
-    <a href="admin_halls.php">Manage Halls</a>
+    <tr>
+        <th>Hall Name</th>
+        <th>Location</th>
+        <th>Owner Mobile</th>
+        <th>Capacity</th>
+        <th>Price</th>
+        <th>Status</th>
+        <th>Action</th>
+    </tr>
 
-    <a href="admin_bookings.php">Manage Bookings</a>
+    <?php while ($hall = mysqli_fetch_assoc($result)) { ?>
 
-    <a href="admin_users.php">Manage Users</a>
+    <tr>
+        <td><?php echo htmlspecialchars($hall["hall_name"]); ?></td>
+        <td><?php echo htmlspecialchars($hall["location"]); ?></td>
+        <td><?php echo htmlspecialchars($hall["owner_phone"]); ?></td>
+        <td><?php echo htmlspecialchars($hall["capacity"]); ?></td>
+        <td>₹<?php echo htmlspecialchars($hall["price"]); ?></td>
+        <td><?php echo htmlspecialchars($hall["hall_status"]); ?></td>
 
-    <a href="admin_feedback.php">Manage Feedback</a>
+        <td>
+            <?php if ($hall["hall_status"] == "Pending") { ?>
 
-    <a href="admin_maintenance.php">Maintenance Complaints</a>
+                <form method="POST">
+                    <input type="hidden" name="hall_id"
+                           value="<?php echo $hall["hall_id"]; ?>">
 
-    <a href="admin_profile.php">Admin Profile</a>
+                    <button type="submit" name="status"
+                            value="Approved">Approve</button>
 
-</div>
+                    <button type="submit" name="status"
+                            value="Rejected">Reject</button>
+                </form>
 
-</div></body>
+            <?php } else { ?>
+                —
+            <?php } ?>
+        </td>
+    </tr>
+
+    <?php } ?>
+
+</table>
+<h2 class="section-heading">Pending Hall Edit Requests</h2>
+<?php while ($request = mysqli_fetch_assoc($edit_result)) { ?>
+
+    <div style="border:1px solid #ccc; padding:15px; margin:15px;">
+
+        <h3><?php echo htmlspecialchars($request["current_hall_name"]); ?></h3>
+
+        <p>Requested Hall Name:
+            <?php echo htmlspecialchars($request["hall_name"]); ?>
+        </p>
+        <p>Owner Mobile Number:
+    <a href="tel:<?php echo htmlspecialchars($request["owner_phone"]); ?>">
+        <?php echo htmlspecialchars($request["owner_phone"]); ?>
+    </a>
+</p>
+
+        <p>Requested Location:
+            <?php echo htmlspecialchars($request["location"]); ?>
+        </p>
+
+        <p>Requested Capacity:
+            <?php echo htmlspecialchars($request["capacity"]); ?>
+        </p>
+
+        <p>Requested Price:
+            ₹<?php echo htmlspecialchars($request["price"]); ?>
+        </p>
+
+        <p>Requested Facilities:
+            <?php echo htmlspecialchars($request["facilities"]); ?>
+        </p>
+
+        <p>Requested Description:
+            <?php echo htmlspecialchars($request["description"]); ?>
+        </p>
+        <form method="POST">
+    <input type="hidden" name="request_id"
+           value="<?php echo $request['request_id']; ?>">
+
+    <button type="submit" name="edit_action"
+            value="Approved">Approve Changes</button>
+
+    <button type="submit" name="edit_action"
+            value="Rejected">Reject Changes</button>
+</form>
+
+    </div>
+
+<?php } ?>
+<h2 class="section-heading">Pending Hall Delete Requests</h2>
+
+<?php while ($request = mysqli_fetch_assoc($delete_result)) { ?>
+
+    <div style="border:1px solid #ccc; padding:15px; margin:15px;">
+
+        <h3><?php echo htmlspecialchars($request["hall_name"]); ?></h3>
+
+        <p>Owner Mobile:
+            <?php echo htmlspecialchars($request["owner_phone"]); ?>
+        </p>
+
+        <p>Request Status: Pending</p>
+
+        <form method="POST">
+            <input type="hidden" name="delete_request_id"
+                   value="<?php echo $request["request_id"]; ?>">
+
+            <button type="submit" name="delete_action"
+                    value="Approved">Approve Delete</button>
+
+            <button type="submit" name="delete_action"
+                    value="Rejected">Reject Delete</button>
+        </form>
+
+    </div>
+
+<?php } ?>
+
+
+
+</body>
 </html>

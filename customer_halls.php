@@ -1,7 +1,7 @@
 <?php
 include "db.php";
 
-$sql = "SELECT * FROM halls ORDER BY hall_id ASC";
+$sql = "SELECT * FROM halls Where hall_status = 'Approved' ORDER BY hall_id ASC";
 $result = mysqli_query($conn, $sql);
 
 if (!$result) {

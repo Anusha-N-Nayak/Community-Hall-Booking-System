@@ -2,6 +2,8 @@
 session_start();
 include "db.php";
 
+$error = "";
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $email = trim($_POST["email"]);
@@ -19,31 +21,169 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if (password_verify($password, $owner["password"])) {
 
+            session_regenerate_id(true);
+
             $_SESSION["owner_id"] = $owner["owner_id"];
             $_SESSION["owner_name"] = $owner["owner_name"];
 
             header("Location: owner_dashboard.php");
-exit();
+            exit();
+
         } else {
-            echo "Incorrect password!";
+            $error = "Invalid email or password!";
         }
 
     } else {
-        echo "Owner not found!";
+        $error = "Invalid email or password!";
     }
 }
 ?>
 
-<h2>Hall Owner Login</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<form method="POST">
+    <title>Owner Login</title>
 
-    Email:
-    <input type="email" name="email" required><br><br>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
 
-    Password:
-    <input type="password" name="password" required><br><br>
+        body {
+            background: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-    <button type="submit">Login</button>
+        .login-container {
+            background: white;
+            width: 400px;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
 
-</form>
+        h2 {
+            text-align: center;
+            color: #243b55;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 13px;
+            background: #243b55;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 17px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #517fa4;
+        }
+
+        .error {
+            color: #b91c1c;
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            margin-bottom: 18px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 22px;
+        }
+
+        .register-link a,
+        .home-link a {
+            color: #243b55;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .home-link {
+            text-align: center;
+            margin-top: 18px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="login-container">
+
+    <h2>Owner Login</h2>
+
+    <p class="subtitle">Welcome Back! Login to Your Owner Account</p>
+
+    <?php if ($error != "") { ?>
+        <p class="error">
+            <?php echo htmlspecialchars($error); ?>
+        </p>
+    <?php } ?>
+
+    <form method="POST">
+
+        <label>Email Address</label>
+        <input type="email" name="email"
+               placeholder="Enter your email" required>
+
+        <label>Password</label>
+        <input type="password" name="password"
+               placeholder="Enter your password" required>
+
+        <button type="submit">Login</button>
+
+    </form>
+
+    <div class="register-link">
+        New Owner?
+        <a href="owner_register.php">Register Here</a>
+    </div>
+
+    <div class="home-link">
+        <a href="index.html">← Back to Home</a>
+    </div>
+
+</div>
+
+</body>
+</html>

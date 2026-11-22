@@ -3,7 +3,10 @@ include "db.php";
 
 $hall_name = $_GET["hall"] ?? "";
 
-$sql = "SELECT * FROM halls WHERE hall_name = ?";
+$sql = "SELECT halls.*, owners.phone AS owner_phone
+        FROM halls
+        JOIN owners ON halls.owner_id = owners.owner_id
+        WHERE halls.hall_name = ?";
 $stmt = mysqli_prepare($conn, $sql);
 
 mysqli_stmt_bind_param($stmt, "s", $hall_name);
@@ -24,7 +27,7 @@ $price = $hall["price"];
 $image = $hall["image"];
 $about = $hall["description"];
 $facilities = $hall["facilities"];
-
+$owner_phone = $hall["owner_phone"];
 $facility_list = array_filter(array_map("trim", explode(",", $facilities)));
 ?>
 
@@ -201,6 +204,12 @@ footer {
         <p><strong>Price:</strong>
             ₹<?php echo htmlspecialchars($price); ?>
         </p>
+
+        <p><strong>Owner Mobile Number:</strong>
+    <a href="tel:<?php echo htmlspecialchars($owner_phone); ?>">
+        <?php echo htmlspecialchars($owner_phone); ?>
+    </a>
+</p>
 
         <p><strong>About:</strong>
             <?php echo htmlspecialchars($about); ?>

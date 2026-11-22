@@ -4,7 +4,7 @@ include "../db.php";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    $email = $_POST["email"];
+    $email = trim($_POST["email"]);
     $password = $_POST["password"];
 
     $sql = "SELECT * FROM users WHERE email = ?";
@@ -19,19 +19,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if (password_verify($password, $user["password"])) {
 
+            session_regenerate_id(true);
+
             $_SESSION["user_id"] = $user["user_id"];
             $_SESSION["name"] = $user["name"];
+
             header("Location: ../dashboard.php");
-exit();
+            exit();
 
-            echo "Login successful! Welcome " . htmlspecialchars($user["name"]);
-
-        } else {
-            echo "Incorrect password!";
         }
-
-    } else {
-        echo "User not found!";
     }
+
+    header("Location: login.html?error=invalid");
+    exit();
 }
 ?>
