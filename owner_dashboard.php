@@ -58,7 +58,7 @@ if (mysqli_num_rows($result) > 0) {
 
     <tr style="background:#142d4e; color:white;">
         <th>Hall Name</th>
-        <th>Location</th>
+        <th>Place</th>
         <th>Capacity</th>
         <th>Price</th>
         <th>Status</th>
@@ -78,20 +78,23 @@ if (mysqli_num_rows($result) > 0) {
 
         <td><?php echo htmlspecialchars($hall["hall_status"]); ?></td>
 
-        <td>
-            <a href="owner_edit_hall.php?hall_id=<?php echo $hall['hall_id']; ?>">
-                Edit
-            </a>
+        <td style="white-space:nowrap; padding:12px;">
 
-            |
+    <a href="owner_edit_hall.php?hall_id=<?php echo $hall['hall_id']; ?>"
+       style="margin-right:12px;">
+        Edit
+    </a>
 
-            <a href="owner_delete_request.php?hall_id=<?php echo $hall['hall_id']; ?>">
-                Delete
-            </a>
-<a href="owner_maintenance.php?hall_id=<?php echo $hall['hall_id']; ?>">
-    Manage Maintenance
-</a>
-        </td>
+    <a href="owner_delete_request.php?hall_id=<?php echo $hall['hall_id']; ?>"
+       style="margin-right:12px;">
+        Delete
+    </a>
+
+    <a href="owner_maintenance.php?hall_id=<?php echo $hall['hall_id']; ?>">
+        Manage Maintenance
+    </a>
+
+</td>
     </tr>
 
     <?php } ?>

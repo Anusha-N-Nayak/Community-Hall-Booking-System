@@ -5,7 +5,7 @@ include "db.php";
 
 // Only logged-in owners can access this page
 if (!isset($_SESSION["owner_id"])) {
-    header("Location: owner_login.php");
+    header("Place: owner_login.php");
     exit;
 }
 

@@ -3,7 +3,7 @@ session_start();
 include "db.php";
 
 if (!isset($_SESSION["admin_id"])) {
-    header("Location: admin_login.php");
+    header("Place: admin_login.php");
     exit();
 }
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -222,7 +222,7 @@ echo "Total Halls: " . mysqli_num_rows($result);
 
     <tr>
         <th>Hall Name</th>
-        <th>Location</th>
+        <th>Place</th>
         <th>Owner Mobile</th>
         <th>Capacity</th>
         <th>Price</th>
@@ -279,7 +279,7 @@ echo "Total Halls: " . mysqli_num_rows($result);
     </a>
 </p>
 
-        <p>Requested Location:
+        <p>Requested Place:
             <?php echo htmlspecialchars($request["location"]); ?>
         </p>
 

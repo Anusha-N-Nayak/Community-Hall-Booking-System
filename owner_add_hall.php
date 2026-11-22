@@ -84,8 +84,8 @@ if (isset($_FILES["image"]) && $_FILES["image"]["error"] == 0) {
 Hall Name:
 <input type="text" name="hall_name" required><br><br>
 
-Location:
-<input type="text" name="location" required><br><br>
+Place:
+<input type="text" name="location" placeholder="Enter place name, e.g.Darbe, Puttur" required><br><br>
 
 Capacity:
 <input type="number" name="capacity" required><br><br>

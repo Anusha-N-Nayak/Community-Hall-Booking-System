@@ -193,7 +193,7 @@ footer {
 
         <h2><?php echo htmlspecialchars($name); ?></h2>
 
-        <p><strong>Location:</strong>
+        <p><strong>Place:</strong>
             <?php echo htmlspecialchars($location); ?>
         </p>
 
