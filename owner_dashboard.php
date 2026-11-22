@@ -98,6 +98,11 @@ if (mysqli_num_rows($result) > 0) {
         Manage Maintenance
     </a>
 
+    <a href="view_feedback.php?hall_id=<?php echo $hall['hall_id']; ?>&amp;source=owner"
+        style="margin-left:12px;">
+    View Feedback
+</a>
+
 </td>
     </tr>
 

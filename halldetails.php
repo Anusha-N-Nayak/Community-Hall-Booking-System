@@ -176,7 +176,6 @@ footer {
 
 <header>
     <h2>Community Hall Booking</h2>
-    <a href="dashboard.php">Home</a>
 </header>
 
 <div class="container">

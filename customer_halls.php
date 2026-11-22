@@ -1,51 +1,52 @@
-php<?
+<?php
 include "db.php";
+
 $sql = "SELECT *
         FROM halls
         WHERE LOWER(TRIM(COALESCE(hall_status, ''))) = 'approved'
-        AND (
-            deactivation_date IS NULL
-            OR deactivation_date > CURDATE()
-        )
         ORDER BY hall_id ASC";
+
 $result = mysqli_query($conn, $sql);
 
 if (!$result) {
     die("Error fetching halls: " . mysqli_error($conn));
 }
 
-while ($hall = mysqli_fetch_assoc($result)) {
-?><div class="hall-card"><img
-    src="<?php echo htmlspecialchars($hall['image']); ?>"
-    alt="<?php echo htmlspecialchars($hall['hall_name']); ?>">
+while ($hall = mysqli_fetch_assoc($result)):
+?>
 
-<div class="hall-info">
+<div class="hall-card">
 
-    <h3><?php echo htmlspecialchars($hall['hall_name']); ?></h3>
+    <img
+        src="<?php echo htmlspecialchars($hall['image']); ?>"
+        alt="<?php echo htmlspecialchars($hall['hall_name']); ?>">
 
-    <p><b>Place:</b>
-        <?php echo htmlspecialchars($hall['location']); ?>
-    </p>
+    <div class="hall-info">
 
-    <p><b>Capacity:</b>
-        <?php echo htmlspecialchars($hall['capacity']); ?> People
-    </p>
+        <h3><?php echo htmlspecialchars($hall['hall_name']); ?></h3>
 
-    <p><b>Price:</b>
-        ₹<?php echo htmlspecialchars($hall['price']); ?>
-    </p>
+        <p><b>Place:</b>
+            <?php echo htmlspecialchars($hall['location']); ?>
+        </p>
 
-    <p><b>Facilities:</b>
-        <?php echo htmlspecialchars($hall['facilities']); ?>
-    </p>
+        <p><b>Capacity:</b>
+            <?php echo htmlspecialchars($hall['capacity']); ?> People
+        </p>
 
-    <button class="details-btn"
-        onclick="viewDetails('<?php echo htmlspecialchars(addslashes($hall['hall_name'])); ?>')">
-        View Details
-    </button>
+        <p><b>Price:</b>
+            ₹<?php echo htmlspecialchars($hall['price']); ?>
+        </p>
 
+        <p><b>Facilities:</b>
+            <?php echo htmlspecialchars($hall['facilities']); ?>
+        </p>
+
+        <button class="details-btn"
+            onclick="viewDetails('<?php echo htmlspecialchars(addslashes($hall['hall_name'])); ?>')">
+            View Details
+        </button>
+
+    </div>
 </div>
 
-</div><?php
-}
-?>
+<?php endwhile; ?>

@@ -282,7 +282,7 @@ header("Pragma: no-cache");
 
     <nav>
 
-        <a href="dashboard.html">Home</a>
+        <a href="index.html">Home</a>
 
         <a href="my_bookings.php">My Bookings</a>
 
