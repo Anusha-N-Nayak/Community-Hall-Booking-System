@@ -73,13 +73,132 @@ try {
 
     mysqli_commit($conn);
 
-    echo "<h1>Payment Successful!</h1>";
-    echo "<h2>Booking Confirmed!</h2>";
-    echo "<p>Booking ID: " . $booking_id . "</p>";
-    echo "<p>Amount Paid: ₹" . number_format($amount, 2) . "</p>";
-    echo "<p>Transaction ID: " . htmlspecialchars($transaction_id) . "</p>";
+echo '
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful</title>
 
-    echo '<a href="my_bookings.php">View My Bookings</a>';
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f1f4f8;
+            padding: 20px;
+        }
+
+        .success-card {
+            background: white;
+            width: 100%;
+            max-width: 500px;
+            padding: 40px 30px;
+            text-align: center;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.10);
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            line-height: 80px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            background: #dcfce7;
+            color: #16a34a;
+            font-size: 45px;
+            font-weight: bold;
+        }
+
+        h1 {
+            color: #166534;
+            margin-bottom: 8px;
+        }
+
+        h2 {
+            color: #142d4e;
+            margin-bottom: 20px;
+        }
+
+        .details {
+            background: #f1f5f9;
+            padding: 18px;
+            border-radius: 9px;
+            text-align: left;
+            margin: 20px 0;
+            line-height: 2;
+            overflow-wrap: anywhere;
+        }
+
+        .button {
+            display: inline-block;
+            width: 100%;
+            padding: 14px;
+            background: #142d4e;
+            color: white;
+            text-decoration: none;
+            border-radius: 7px;
+            font-weight: bold;
+        }
+
+        .button:hover {
+            background: #2563eb;
+        }
+
+        .message {
+            color: #555;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="success-card">
+
+    <div class="success-icon">&#10003;</div>
+
+    <h1>Payment Successful!</h1>
+
+    <h2>Booking Confirmed!</h2>
+
+    <p class="message">
+        Your payment has been completed successfully.
+        Your community hall booking is now confirmed.
+    </p>
+
+    <div class="details">
+
+        <strong>Booking ID:</strong> ' . $booking_id . '<br>
+
+        <strong>Amount Paid:</strong> ₹' . number_format($amount, 2) . '<br>
+
+        <strong>Payment Method:</strong> ' . htmlspecialchars($payment_method) . '<br>
+
+        <strong>Transaction ID:</strong> ' . htmlspecialchars($transaction_id) . '
+
+    </div>
+
+    <a href="my_bookings.php" class="button">
+        View My Bookings
+    </a>
+
+</div>
+
+</body>
+</html>';
+
+
+    
 
 } catch (Exception $e) {
 

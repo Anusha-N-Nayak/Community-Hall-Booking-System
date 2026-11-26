@@ -226,8 +226,10 @@ echo "Total Halls: " . mysqli_num_rows($result);
         <th>Owner Mobile</th>
         <th>Capacity</th>
         <th>Price</th>
+        <th>View Bookings</th>
         <th>Status</th>
         <th>Action</th>
+        
     </tr>
 
     <?php while ($hall = mysqli_fetch_assoc($result)) { ?>
@@ -238,7 +240,14 @@ echo "Total Halls: " . mysqli_num_rows($result);
         <td><?php echo htmlspecialchars($hall["owner_phone"]); ?></td>
         <td><?php echo htmlspecialchars($hall["capacity"]); ?></td>
         <td>₹<?php echo htmlspecialchars($hall["price"]); ?></td>
-        <td><?php echo htmlspecialchars($hall["hall_status"]); ?></td>
+
+<td>
+    <a href="view_hall_bookings.php?hall_id=<?php echo $hall['hall_id']; ?>">
+        View Bookings
+    </a>
+</td>
+
+<td><?php echo htmlspecialchars($hall["hall_status"]); ?></td>
 
         <td>
             <?php if ($hall["hall_status"] == "Pending") { ?>

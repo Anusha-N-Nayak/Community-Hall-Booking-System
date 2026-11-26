@@ -342,6 +342,9 @@
     </h3>
 
     <div id="slotList"></div>
+    <p id="selectionMessage"
+   style="color:#d97706;font-size:14px;margin-top:8px;">
+</p>
 
 </div>
        
@@ -390,7 +393,7 @@ let currentMonth = today.getMonth();
 let currentYear = today.getFullYear();
 
 let selectedDay = null;
-let selectedSlot = null;
+let selectedSlot = [];
 
 let bookings = [];
 let maintenance = [];
@@ -592,7 +595,8 @@ function generateCalendar() {
     date.onclick = function() {
 
         selectedDay = null;
-        selectedSlot = null;
+        selectedSlot = [];
+
 
         document.getElementById("selectedDate").innerText =
             "This hall is unavailable on " + key + ".";
@@ -625,7 +629,7 @@ function generateCalendar() {
 
                 selectedDay = key;
 
-                selectedSlot = null;
+                selectedSlots = [ ];;
 
                 document.getElementById("selectedDate").innerText =
                     "Selected Date: " + key;
@@ -674,21 +678,18 @@ function generateCalendar() {
 
 }
 
-
 function showTimeSlots(date) {
 
     const section = document.getElementById("timeSlots");
-
     const list = document.getElementById("slotList");
 
     section.style.display = "block";
-
     list.innerHTML = "";
-
 
     Object.keys(slots).forEach(slot => {
 
         const booked = isSlotBooked(date, slot);
+        const selected = selectedSlots.includes(slot);
 
         const row = document.createElement("div");
 
@@ -698,37 +699,92 @@ function showTimeSlots(date) {
             "background:white;border-radius:6px;gap:8px;";
 
         const name = document.createElement("span");
-
         name.innerText = slots[slot][2];
 
         const button = document.createElement("button");
-
         button.type = "button";
 
         button.style.cssText =
             "padding:9px 12px;border:0;border-radius:5px;" +
             "color:white;min-width:105px;";
 
-
         if (booked) {
 
             button.innerText = "Booked";
-
             button.style.background = "#c62828";
-
             button.disabled = true;
 
         } else {
 
-            button.innerText =
-                selectedSlot === slot ? "Selected" : "Available";
+            button.innerText = selected ? "Selected" : "Available";
 
             button.style.background =
-                selectedSlot === slot ? "#2878d0" : "#239b56";
+                selected ? "#2878d0" : "#239b56";
 
             button.onclick = function() {
 
-                selectedSlot = slot;
+                if (slot === "full_day") {
+
+                    selectedSlots = selected
+                        ? []
+                        : ["full_day"];
+
+                } else {
+
+                    if (selected) {
+
+                        selectedSlots = selectedSlots.filter(
+                            item => item !== slot
+                        );
+
+                    } else {
+
+                        selectedSlots = selectedSlots.filter(
+                            item => item !== "full_day"
+                        );
+
+                        if (selectedSlots.length >= 2) {
+                            alert("You can select a maximum of two sessions.");
+                            return;
+                        }
+
+                        const newSelection = [...selectedSlots, slot];
+
+                        const validPairs = [
+                            ["morning", "afternoon"],
+                            ["afternoon", "evening"]
+                        ];
+
+                        if (newSelection.length === 2) {
+
+                            const isValidPair = validPairs.some(pair =>
+                                pair.every(item => newSelection.includes(item))
+                            );
+
+                            if (!isValidPair) {
+                                const message = document.getElementById("selectionMessage");
+
+if (message) {
+    message.textContent =
+        "Please select consecutive sessions: Morning + Afternoon or Afternoon + Evening.";
+    message.style.color = "#d97706";
+}
+
+return;
+                            }
+
+                        }
+
+                        selectedSlots.push(slot);
+
+                    }
+
+                }
+                const message = document.getElementById("selectionMessage");
+
+if (message) {
+    message.textContent = "";
+}
 
                 showTimeSlots(date);
 
@@ -736,11 +792,8 @@ function showTimeSlots(date) {
 
         }
 
-
         row.appendChild(name);
-
         row.appendChild(button);
-
         list.appendChild(row);
 
     });
@@ -816,7 +869,7 @@ async function loadBookings() {
 
             selectedDay = null;
 
-            selectedSlot = null;
+            selectedSlots = [ ];;
 
             document.getElementById("selectedDate").innerText =
                 "This hall is unavailable on the selected date.";
@@ -860,7 +913,7 @@ function changeMonth(value) {
 
     selectedDay = null;
 
-    selectedSlot = null;
+    selectedSlots = [ ];;
 
 
     document.getElementById("selectedDate").innerText =
@@ -903,7 +956,7 @@ if (isDeactivatedDate(selectedDay)) {
     messageBox.style.display = "block";
 
     selectedDay = null;
-    selectedSlot = null;
+    selectedSlots = [ ];;
 
     document.getElementById("timeSlots").style.display = "none";
 
@@ -929,7 +982,7 @@ if (isDeactivatedDate(selectedDay)) {
 
         document.querySelector(".confirm").style.display = "none";
 
-        selectedSlot = null;
+        selectedSlots = [ ];;
 
         alert(
             "This hall is under maintenance on this date. " +
@@ -941,13 +994,10 @@ if (isDeactivatedDate(selectedDay)) {
     }
 
 
-    if (!selectedSlot) {
-
-        alert("Please select an available time slot.");
-
-        return;
-
-    }
+    if (selectedSlots.length === 0) {
+    alert("Please select at least one available time slot.");
+    return;
+}
 
 
     localStorage.setItem("selectedHall", hall);
@@ -961,7 +1011,7 @@ if (isDeactivatedDate(selectedDay)) {
         "booking.html?hall=" + encodeURIComponent(hall) +
         "&hall_id=" + hallId +
         "&date=" + encodeURIComponent(selectedDay) +
-        "&time=" + selectedSlot;
+        "&times=" + encodeURIComponent(selectedSlots.join(","));
 
 }
 

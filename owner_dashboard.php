@@ -41,7 +41,7 @@ $delete_requests = mysqli_stmt_get_result($delete_stmt);
 
 <a href="owner_add_hall.php">Add Hall</a><br><br>
 
-<a href="owner_bookings.php">View Bookings</a><br><br>
+
 
 <a href="owner_logout.php">Logout</a>
 
@@ -64,6 +64,7 @@ if (mysqli_num_rows($result) > 0) {
         <th>Place</th>
         <th>Capacity</th>
         <th>Price</th>
+        <th>View Bookings</th>
         <th>Status</th>
         <th>Action</th>
     </tr>
@@ -81,6 +82,11 @@ if (mysqli_num_rows($result) > 0) {
         <td>₹<?php echo htmlspecialchars($hall["price"]); ?></td>
 
         <td><?php echo htmlspecialchars($hall["hall_status"]); ?></td>
+        <td>
+    <a href="owner_bookings.php?hall_id=<?php echo $hall['hall_id']; ?>">
+        View Bookings
+    </a>
+</td>
 
         <td style="white-space:nowrap; padding:12px;">
 

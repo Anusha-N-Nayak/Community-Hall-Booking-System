@@ -11,7 +11,7 @@ if ($hall_id <= 0) {
     exit;
 }
 
-$sql = "SELECT hall_id, hall_name, price
+$sql = "SELECT hall_id, hall_name, price,capacity
         FROM halls
         WHERE hall_id = ?
         AND (hall_status IS NULL OR hall_status != 'Inactive')";

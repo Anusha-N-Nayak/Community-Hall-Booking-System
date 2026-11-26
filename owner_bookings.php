@@ -7,19 +7,24 @@ if (!isset($_SESSION["owner_id"])) {
 }
 
 $owner_id = $_SESSION["owner_id"];
+$hall_id = (int)($_GET["hall_id"] ?? 0);
 
-$sql = "SELECT b.*, h.hall_name, u.name, u.phone,
+
+$sql = "SELECT b.*, h.hall_name,
+               u.name AS profile_name,
+               u.phone AS profile_phone,
+               u.email AS profile_email,
                p.payment_status
         FROM bookings b
         JOIN halls h ON b.hall_id = h.hall_id
-        JOIN users u ON b.user_id = u.user_id
+        LEFT JOIN users u ON b.user_id = u.user_id
         LEFT JOIN payments p ON b.booking_id = p.booking_id
-        WHERE h.owner_id = ?
+        WHERE h.owner_id = ? AND b.hall_id = ?
         ORDER BY b.created_at DESC";
 
 $stmt = mysqli_prepare($conn, $sql);
 
-mysqli_stmt_bind_param($stmt, "i", $owner_id);
+mysqli_stmt_bind_param($stmt, "ii", $owner_id, $hall_id);
 
 mysqli_stmt_execute($stmt);
 
@@ -60,8 +65,10 @@ if (mysqli_num_rows($result) > 0) {
     <th>Hall Name</th>
     <th>Customer Name</th>
     <th>Phone</th>
+    <th>Email</th>
     <th>Event</th>
     <th>Event Date</th>
+    <th>Amount</th>
     <th>Booking Status</th>
     <th>Payment Status</th>
 </tr>
@@ -75,16 +82,41 @@ while ($booking = mysqli_fetch_assoc($result)) {
 
     <td><?php echo htmlspecialchars($booking["hall_name"]); ?></td>
 
-    <td><?php echo htmlspecialchars($booking["name"]); ?></td>
-
-    <td><?php echo htmlspecialchars($booking["phone"]); ?></td>
+    <td>
+    <?php
+    echo htmlspecialchars(
+        !empty($booking["customer_name"])
+            ? $booking["customer_name"]
+            : $booking["profile_name"]
+    );
+    ?>
+</td>
+<td>
+    <?php
+    echo htmlspecialchars(
+        !empty($booking["mobile"])
+            ? $booking["mobile"]
+            : $booking["profile_phone"]
+    );
+    ?>
+</td>
+<td>
+    <?php
+    echo htmlspecialchars(
+        !empty($booking["email"])
+            ? $booking["email"]
+            : $booking["profile_email"]
+    );
+    ?>
+</td>
 
     <td><?php echo htmlspecialchars($booking["event_name"]); ?></td>
 
     <td><?php echo htmlspecialchars($booking["event_date"]); ?></td>
+    <td>₹<?php echo htmlspecialchars($booking["total_amount"]); ?></td>
 
     <td><?php echo htmlspecialchars($booking["booking_status"]); ?></td>
-
+    
     <td>
         <?php echo htmlspecialchars($booking["payment_status"] ?? "Not Paid"); ?>
     </td>

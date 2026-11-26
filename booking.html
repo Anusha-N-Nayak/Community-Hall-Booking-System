@@ -77,6 +77,25 @@
             font-size: 20px;
             font-weight: bold;
         }
+        .time-options {
+    margin-top: 10px;
+}
+
+.time-options label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    margin-top: 5px;
+    background: #f2f4f8;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.time-options input {
+    width: auto;
+    margin: 0;
+}
     </style>
 </head>
 
@@ -105,14 +124,14 @@
         <input type="date" id="bookingDate" name="event_date" required>
 
         <label>Customer Name</label>
-        <input type="text" id="customerName" required>
+<input type="text" id="customerName" name="customer_name" required>
 
         <label>Mobile Number</label>
-        <input type="tel" id="mobile" pattern="[0-9]{10}"
+        <input type="tel" id="mobile" name="mobile" pattern="[0-9]{10}"
                maxlength="10" placeholder="Enter 10-digit number" required>
 
         <label>Email Address</label>
-        <input type="email" id="email" required>
+        <input type="email" id="email" name="email" required>
 
         <label>Event Type</label>
         <select id="eventType" name="event_name" required>
@@ -124,23 +143,41 @@
             <option>Meeting</option>
             <option>Other</option>
         </select>
-
         <label>Number of Guests</label>
-        <input type="number" id="guests" name="guest_count" min="1" required>
+<input type="number" id="guests" name="guest_count"
+       min="1" placeholder="Enter number of guests" required>
 
-        <label>Event Time</label>
-        <select id="eventTime" required>
-    <option value="">Select Time</option>
-    <option value="morning">Morning (8 AM - 12 PM)</option>
-    <option value="afternoon">Afternoon (12 PM - 4 PM)</option>
-    <option value="evening">Evening (4 PM - 10 PM)</option>
-    <option value="full_day">Full Day (8 AM - 10 PM)</option>
-</select>
-            
 
-        <label>Additional Requirements</label>
-        <textarea id="requirements" rows="4"
-                  placeholder="Enter any additional requirements"></textarea>
+        <label>Event Time (Select Your Required Sessions)</label>
+
+<div class="time-options">
+    <label>
+        <input type="checkbox" class="time-slot" value="morning">
+        Morning (8 AM - 12 PM)
+    </label>
+
+    <label>
+        <input type="checkbox" class="time-slot" value="afternoon">
+        Afternoon (12 PM - 4 PM)
+    </label>
+
+    <label>
+        <input type="checkbox" class="time-slot" value="evening">
+        Evening (4 PM - 10 PM)
+    </label>
+
+    <label>
+        <input type="checkbox" id="fullDay" value="full_day">
+        Full Day (8 AM - 10 PM)
+    </label>
+</div>
+<p id="timeMessage"
+   style="color:#d97706;font-size:14px;margin-top:8px;">
+    Select one or two consecutive sessions.
+</p>
+
+
+        
 
         <label>Booking Amount</label>
         <input type="text" id="amount" class="amount" readonly>
@@ -159,11 +196,120 @@
 const params = new URLSearchParams(window.location.search);
 
 const selectedTime = params.get("time");
+const timeSlots = document.querySelectorAll(".time-slot");
+const fullDay = document.getElementById("fullDay");
+const timeMessage = document.getElementById("timeMessage");
 
-if (selectedTime) {
-    document.getElementById("eventTime").value = selectedTime;
+function updateBookingAmount() {
+
+    if (fullDay.checked) {
+
+        timeSlots.forEach(slot => slot.checked = false);
+
+        document.getElementById("amount").value =
+            "₹" + hallPrice.toLocaleString("en-IN");
+
+        document.getElementById("totalAmount").value = hallPrice;
+
+        timeMessage.textContent = "Full Day selected (100%).";
+        return;
+    }
+
+    const selected = Array.from(timeSlots)
+        .filter(slot => slot.checked)
+        .map(slot => slot.value);
+
+    let percentage = 0;
+
+    if (selected.length === 1) {
+        percentage = 45;
+    } else if (selected.length === 2) {
+        percentage = 85;
+    }
+
+    const amount = hallPrice * percentage / 100;
+
+    document.getElementById("amount").value =
+        "₹" + amount.toLocaleString("en-IN");
+
+    document.getElementById("totalAmount").value = amount;
+
+    timeMessage.textContent = selected.length === 0
+        ? "Select your required sessions."
+        : "Selected " + selected.length + " session(s) – " +
+          percentage + "% of full-day price.";
 }
 
+timeSlots.forEach(slot => {
+
+    slot.addEventListener("change", function() {
+
+        fullDay.checked = false;
+
+        const selected = Array.from(timeSlots)
+            .filter(item => item.checked)
+            .map(item => item.value);
+
+        let warning = "";
+
+        if (selected.length > 2) {
+
+            this.checked = false;
+            warning = "You can select a maximum of two sessions.";
+
+        } else if (
+            selected.length === 2 &&
+            !(
+                (selected.includes("morning") &&
+                 selected.includes("afternoon")) ||
+                (selected.includes("afternoon") &&
+                 selected.includes("evening"))
+            )
+        ) {
+
+            this.checked = false;
+            warning = "Please select consecutive sessions only.";
+
+        }
+
+        updateBookingAmount();
+
+        if (warning) {
+            timeMessage.textContent = warning;
+            timeMessage.style.color = "#d97706";
+        } else {
+            timeMessage.style.color = "";
+        }
+
+    });
+
+});
+
+fullDay.addEventListener("change", updateBookingAmount);
+
+const selectedTimes = (
+    params.get("times") || params.get("time") || ""
+).split(",").filter(Boolean);
+
+if (selectedTimes.includes("full_day")) {
+
+    fullDay.checked = true;
+
+} else {
+
+    selectedTimes.forEach(time => {
+
+        const slot = document.querySelector(
+            '.time-slot[value="' + time + '"]'
+        );
+
+        if (slot) {
+            slot.checked = true;
+        }
+
+    });
+
+}
 const receivedId = Number(
     params.get("hall_id") || localStorage.getItem("selectedHallId")
 );
@@ -173,7 +319,25 @@ const date = params.get("date") || localStorage.getItem("bookingDate");
 let hall = "";
 let hallId = 0;
 let hallPrice = 0;
+let hallCapacity = 0;
+// Auto-fill booking contact details from user profile
+fetch("get_booking_profile.php")
+    .then(response => response.json())
+    .then(data => {
 
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        document.getElementById("customerName").value = data.name;
+        document.getElementById("mobile").value = data.phone;
+        document.getElementById("email").value = data.email;
+
+    })
+    .catch(error => {
+        console.error("Profile loading error:", error);
+    });
 // Get hall details from database
 if (!receivedId) {
     alert("Please select a valid hall.");
@@ -192,6 +356,11 @@ if (!receivedId) {
             hall = data.hall_name;
             hallId = Number(data.hall_id);
             hallPrice = Number(data.price);
+            hallCapacity = Number(data.capacity);
+
+document.getElementById("guests").max = hallCapacity;
+            
+
 
             document.getElementById("hallName").value = hall;
             document.getElementById("hiddenHallName").value = hall;
@@ -204,9 +373,9 @@ if (!receivedId) {
 
         })
         .catch(error => {
-            alert("Unable to load hall details.");
-            console.error(error);
-        });
+    alert("Hall loading error: " + error.message);
+    console.error(error);
+});
 }
 
 if (date) {
@@ -215,43 +384,79 @@ if (date) {
 // Submit booking
 document.getElementById("bookingForm").addEventListener("submit", function(e) {
 
-    const eventTime = document.getElementById("eventTime").value;
+    const selected = Array.from(timeSlots)
+        .filter(slot => slot.checked)
+        .map(slot => slot.value);
 
-    const times = {
-        morning: ["08:00", "12:00"],
-        afternoon: ["12:00", "16:00"],
-        evening: ["16:00", "22:00"],
-        full_day: ["08:00", "22:00"]
-    };
+    const guestCount = Number(document.getElementById("guests").value);
 
-    if (!times[eventTime]) {
-
+    if (guestCount > hallCapacity) {
         e.preventDefault();
-
-        alert("Please select event time.");
-
+        alert("Number of guests cannot exceed the hall capacity of " + hallCapacity + ".");
         return;
     }
 
     if (!hallId || hallId !== Number(document.getElementById("hallId").value)) {
-
         e.preventDefault();
-
         alert("Invalid hall ID. Please select the hall again.");
-
         return;
     }
 
-    document.getElementById("hallId").value = hallId;
+    let start = "";
+    let end = "";
 
+    if (fullDay.checked) {
+        start = "08:00";
+        end = "22:00";
+    }
+
+    else if (selected.length === 1) {
+
+        const times = {
+            morning: ["08:00", "12:00"],
+            afternoon: ["12:00", "16:00"],
+            evening: ["16:00", "22:00"]
+        };
+
+        start = times[selected[0]][0];
+        end = times[selected[0]][1];
+    }
+
+    else if (selected.length === 2) {
+
+        if (selected.includes("morning") && selected.includes("afternoon")) {
+            start = "08:00";
+            end = "16:00";
+        }
+
+        else if (selected.includes("afternoon") && selected.includes("evening")) {
+            start = "12:00";
+            end = "22:00";
+        }
+
+        else {
+            e.preventDefault();
+            alert("Please select two consecutive sessions.");
+            return;
+        }
+    }
+
+    else {
+        e.preventDefault();
+        alert("Please select a booking time.");
+        return;
+    }
+
+    document.getElementById("startTime").value = start;
+    document.getElementById("endTime").value = end;
+
+    document.getElementById("hallId").value = hallId;
     document.getElementById("hiddenHallName").value = hall;
 
-    document.getElementById("startTime").value = times[eventTime][0];
+    updateBookingAmount();
 
-    document.getElementById("endTime").value = times[eventTime][1];
-
-    document.getElementById("totalAmount").value = hallPrice;
-
+    document.getElementById("totalAmount").value =
+        Math.round(hallPrice * (fullDay.checked ? 1 : selected.length === 1 ? 0.45 : 0.85));
 });
 
 </script>
