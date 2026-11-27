@@ -15,17 +15,27 @@ $stmt = mysqli_prepare($conn, $sql);
 
 mysqli_stmt_bind_param($stmt, "i", $owner_id);
 mysqli_stmt_execute($stmt);
-
 $result = mysqli_stmt_get_result($stmt);
-$edit_sql = "SELECT * FROM hall_edit_requests
-             WHERE owner_id = ?
-             ORDER BY request_id DESC";
+
+$edit_sql = "SELECT hall_edit_requests.*,
+                    halls.hall_name AS current_hall_name,
+                    halls.location AS current_location,
+                    halls.capacity AS current_capacity,
+                    halls.price AS current_price,
+                    halls.facilities AS current_facilities,
+                    halls.description AS current_description,
+                    halls.image AS current_image
+             FROM hall_edit_requests
+             JOIN halls
+             ON hall_edit_requests.hall_id = halls.hall_id
+             WHERE hall_edit_requests.owner_id = ?
+             ORDER BY hall_edit_requests.request_id DESC";
 
 $edit_stmt = mysqli_prepare($conn, $edit_sql);
 mysqli_stmt_bind_param($edit_stmt, "i", $owner_id);
 mysqli_stmt_execute($edit_stmt);
-
 $edit_requests = mysqli_stmt_get_result($edit_stmt);
+
 $delete_sql = "SELECT * FROM hall_delete_requests
                WHERE owner_id = ?
                ORDER BY request_id DESC";
@@ -40,6 +50,7 @@ $delete_requests = mysqli_stmt_get_result($delete_stmt);
 <h2>Welcome, <?php echo htmlspecialchars($owner_name); ?>!</h2>
 
 <a href="owner_add_hall.php">Add Hall</a><br><br>
+<a href="owner_monthly_revenue.php">Monthly Revenue</a><br><br>
 
 
 
@@ -64,8 +75,9 @@ if (mysqli_num_rows($result) > 0) {
         <th>Place</th>
         <th>Capacity</th>
         <th>Price</th>
-        <th>View Bookings</th>
         <th>Status</th>
+        <th>Rejection Reason</th>
+        <th>View Bookings</th>
         <th>Action</th>
     </tr>
 
@@ -82,6 +94,15 @@ if (mysqli_num_rows($result) > 0) {
         <td>₹<?php echo htmlspecialchars($hall["price"]); ?></td>
 
         <td><?php echo htmlspecialchars($hall["hall_status"]); ?></td>
+        <td>
+    <?php
+    if ($hall["hall_status"] == "Rejected" && !empty($hall["rejection_reason"])) {
+        echo htmlspecialchars($hall["rejection_reason"]);
+    } else {
+        echo "—";
+    }
+    ?>
+</td>
         <td>
     <a href="owner_bookings.php?hall_id=<?php echo $hall['hall_id']; ?>">
         View Bookings
@@ -115,45 +136,236 @@ if (mysqli_num_rows($result) > 0) {
     <?php } ?>
 
 </table>
-<h3>My Hall Edit Requests</h3>
+
+
+
+
+<h3 style="margin-top:25px; color:#142d4e;">
+    My Hall Edit Requests
+</h3>
+
+<div style="
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:15px;
+    align-items:start;
+">
+
 <?php while ($request = mysqli_fetch_assoc($edit_requests)) { ?>
 
-    <div style="border:1px solid #ccc; padding:15px; margin:15px;">
+    <?php
+    $status = $request["request_status"];
 
-        <h4><?php echo htmlspecialchars($request["hall_name"]); ?></h4>
+    $status_color = "#f59e0b";
+    $status_bg = "#fef3c7";
 
-        <p>Requested Price: ₹<?php echo htmlspecialchars($request["price"]); ?></p>
+    if ($status == "Approved") {
+        $status_color = "#15803d";
+        $status_bg = "#dcfce7";
+    } elseif ($status == "Rejected") {
+        $status_color = "#dc2626";
+        $status_bg = "#fee2e2";
+    }
 
-        <p>Request Status:
-            <strong>
-                <?php echo htmlspecialchars($request["request_status"]); ?>
+    $fields = [
+        "hall_name" => "Hall Name",
+        "location" => "Location",
+        "capacity" => "Capacity",
+        "price" => "Price",
+        "facilities" => "Facilities",
+        "description" => "Description"
+    ];
+
+    $has_changes = false;
+    ?>
+
+    <div style="
+        background:white;
+        border:1px solid #dce3ec;
+        border-radius:10px;
+        padding:15px;
+        box-shadow:0 2px 8px rgba(0,0,0,0.05);
+    ">
+
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:8px;
+            margin-bottom:12px;
+        ">
+
+            <strong style="color:#142d4e;">
+                Edit Request #<?php echo $request["request_id"]; ?>
             </strong>
-        </p>
+
+            <span style="
+                background:<?php echo $status_bg; ?>;
+                color:<?php echo $status_color; ?>;
+                padding:5px 10px;
+                border-radius:20px;
+                font-size:12px;
+                font-weight:bold;
+                white-space:nowrap;
+            ">
+                <?php echo htmlspecialchars($status); ?>
+            </span>
+
+        </div>
+
+        <?php foreach ($fields as $field => $label) { ?>
+
+            <?php
+            $previous = $request["previous_" . $field];
+            $requested = $request[$field];
+
+            if ($previous !== null &&
+                (string)$previous !== (string)$requested) {
+
+                $has_changes = true;
+            ?>
+
+                <p style="margin:8px 0; font-size:14px;">
+                    <strong><?php echo $label; ?>:</strong>
+                    <?php echo htmlspecialchars($requested); ?>
+                </p>
+
+            <?php } ?>
+
+        <?php } ?>
+
+        <?php
+        $previous_image = $request["previous_image"];
+        $requested_image = $request["image"];
+
+        if ($previous_image !== null &&
+            (string)$previous_image !== (string)$requested_image) {
+
+            $has_changes = true;
+        ?>
+
+            <p style="font-size:14px; margin:8px 0;">
+                <strong>Changed Image:</strong>
+            </p>
+
+            <?php if (!empty($requested_image)) { ?>
+                <img src="<?php echo htmlspecialchars($requested_image); ?>"
+                     style="width:110px; height:80px; object-fit:cover;
+                            border-radius:7px;">
+            <?php } ?>
+
+        <?php } ?>
+<?php if ($status == "Rejected" && !empty($request["rejection_reason"])) { ?>
+
+    <div style="
+        margin-top:10px;
+        padding:10px;
+        background:#fee2e2;
+        color:#991b1b;
+        border-radius:7px;
+        font-size:13px;
+    ">
+        <strong>Admin's Rejection Reason:</strong><br>
+
+        <?php echo nl2br(htmlspecialchars($request["rejection_reason"])); ?>
+    </div>
+
+<?php } ?>
+        
 
     </div>
 
 <?php } ?>
 
 </div>
-<h3>My Hall Delete Requests</h3>
+
+
+<h3 style="margin-top:25px; color:#142d4e;">
+    My Hall Delete Requests
+</h3>
+
+<div style="
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:15px;
+    align-items:start;
+">
 
 <?php while ($request = mysqli_fetch_assoc($delete_requests)) { ?>
 
-    <div style="border:1px solid #ccc; padding:15px; margin:15px;">
+    <?php
+    $status = $request["request_status"];
 
-        <p>Hall ID:
-            <?php echo htmlspecialchars($request["hall_id"]); ?>
-        </p>
+    $status_color = "#f59e0b";
+    $status_bg = "#fef3c7";
 
-        <p>Request Status:
-            <strong>
-                <?php echo htmlspecialchars($request["request_status"]); ?>
+    if ($status == "Approved") {
+        $status_color = "#15803d";
+        $status_bg = "#dcfce7";
+    } elseif ($status == "Rejected") {
+        $status_color = "#dc2626";
+        $status_bg = "#fee2e2";
+    }
+    ?>
+
+    <div style="
+        background:white;
+        border:1px solid #dce3ec;
+        border-radius:10px;
+        padding:15px;
+        box-shadow:0 2px 8px rgba(0,0,0,0.05);
+    ">
+
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:8px;
+            margin-bottom:12px;
+        ">
+
+            <strong style="color:#142d4e;">
+                Delete Request #<?php echo $request["request_id"]; ?>
             </strong>
-        </p>
 
+            <span style="
+                background:<?php echo $status_bg; ?>;
+                color:<?php echo $status_color; ?>;
+                padding:5px 10px;
+                border-radius:20px;
+                font-size:12px;
+                font-weight:bold;
+            ">
+                <?php echo htmlspecialchars($status); ?>
+            </span>
+
+        </div>
+
+        <p style="font-size:14px; margin:8px 0;">
+           <?php if ($status == "Rejected" && !empty($request["rejection_reason"])) { ?>
+
+    <div style="
+        margin-top:10px;
+        padding:10px;
+        background:#fee2e2;
+        color:#991b1b;
+        border-radius:7px;
+        font-size:13px;
+    ">
+        <strong>Admin's Rejection Reason:</strong><br>
+
+        <?php echo nl2br(htmlspecialchars($request["rejection_reason"])); ?>
     </div>
 
 <?php } ?>
+       
+    </div>
+
+<?php } ?>
+
+</div>
+
+
 <?php
 } else {
     echo "You have not added any halls yet.";

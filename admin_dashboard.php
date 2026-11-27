@@ -61,13 +61,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     }
                 }
 
-                $sql = "UPDATE hall_edit_requests
-                        SET request_status = ?
-                        WHERE request_id = ?";
+                $rejection_reason = null;
 
-                $stmt = mysqli_prepare($conn, $sql);
-                mysqli_stmt_bind_param($stmt, "si", $action, $request_id);
-                mysqli_stmt_execute($stmt);
+if ($action == "Rejected") {
+    $rejection_reason = trim($_POST["edit_rejection_reason"] ?? "");
+
+    if ($rejection_reason == "") {
+        die("Please enter a reason for rejecting the edit request.");
+    }
+}
+
+$sql = "UPDATE hall_edit_requests
+        SET request_status = ?, rejection_reason = ?
+        WHERE request_id = ?";
+
+$stmt = mysqli_prepare($conn, $sql);
+
+mysqli_stmt_bind_param(
+    $stmt,
+    "ssi",
+    $action,
+    $rejection_reason,
+    $request_id
+);
+
+mysqli_stmt_execute($stmt);
             }
         }
     }
@@ -92,6 +110,19 @@ elseif (isset($_POST["delete_request_id"], $_POST["delete_action"])) {
 
         if ($request) {
 
+            $rejection_reason = null;
+
+            if ($action == "Rejected") {
+
+                $rejection_reason = trim(
+                    $_POST["delete_rejection_reason"] ?? ""
+                );
+
+                if ($rejection_reason == "") {
+                    die("Please enter a reason for rejecting the delete request.");
+                }
+            }
+
             if ($action == "Approved") {
 
                 $sql = "UPDATE halls
@@ -99,38 +130,63 @@ elseif (isset($_POST["delete_request_id"], $_POST["delete_action"])) {
                         WHERE hall_id = ?";
 
                 $stmt = mysqli_prepare($conn, $sql);
-                mysqli_stmt_bind_param($stmt, "i", $request["hall_id"]);
+                mysqli_stmt_bind_param(
+                    $stmt,
+                    "i",
+                    $request["hall_id"]
+                );
                 mysqli_stmt_execute($stmt);
             }
 
             $sql = "UPDATE hall_delete_requests
-                    SET request_status = ?
+                    SET request_status = ?,
+                        rejection_reason = ?
                     WHERE request_id = ?";
 
             $stmt = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt, "si", $action, $request_id);
+
+            mysqli_stmt_bind_param(
+                $stmt,
+                "ssi",
+                $action,
+                $rejection_reason,
+                $request_id
+            );
+
             mysqli_stmt_execute($stmt);
         }
     }
 }
 
     // Approve or reject newly added halls
-    elseif (isset($_POST["hall_id"], $_POST["status"])) {
+   
+// Approve or reject newly added halls
+elseif (isset($_POST["hall_id"], $_POST["status"])) {
 
-        $hall_id = (int)$_POST["hall_id"];
-        $status = $_POST["status"];
+    $hall_id = (int)$_POST["hall_id"];
+    $status = $_POST["status"];
+    $reason = trim($_POST["rejection_reason"] ?? "");
 
-        if (in_array($status, ["Approved", "Rejected"])) {
+    if (in_array($status, ["Approved", "Rejected"])) {
 
-            $sql = "UPDATE halls
-                    SET hall_status = ?
-                    WHERE hall_id = ?";
-
-            $stmt = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt, "si", $status, $hall_id);
-            mysqli_stmt_execute($stmt);
+        if ($status == "Rejected" && $reason == "") {
+            die("Please enter a rejection reason.");
         }
+
+        if ($status == "Approved") {
+            $reason = null;
+        }
+
+        $sql = "UPDATE halls
+                SET hall_status = ?, rejection_reason = ?
+                WHERE hall_id = ?";
+
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, "ssi", $status, $reason, $hall_id);
+        mysqli_stmt_execute($stmt);
     }
+}
+
 
     header("Location: admin_dashboard.php");
     exit();
@@ -148,12 +204,19 @@ if (!$result) {
 }
 $edit_sql = "SELECT hall_edit_requests.*,
                     halls.hall_name AS current_hall_name,
+                    halls.location AS current_location,
+                    halls.capacity AS current_capacity,
+                    halls.price AS current_price,
+                    halls.facilities AS current_facilities,
+                    halls.description AS current_description,
+                    halls.image AS current_image,
                     owners.phone AS owner_phone
              FROM hall_edit_requests
              JOIN halls ON hall_edit_requests.hall_id = halls.hall_id
              JOIN owners ON hall_edit_requests.owner_id = owners.owner_id
              WHERE hall_edit_requests.request_status = 'Pending'
              ORDER BY hall_edit_requests.request_id DESC";
+
 $edit_result = mysqli_query($conn, $edit_sql);
 
 if (!$edit_result) {
@@ -250,18 +313,35 @@ echo "Total Halls: " . mysqli_num_rows($result);
 <td><?php echo htmlspecialchars($hall["hall_status"]); ?></td>
 
         <td>
-            <?php if ($hall["hall_status"] == "Pending") { ?>
+    <?php if ($hall["hall_status"] == "Pending") { ?>        
+            
+<form method="POST">
+    <input type="hidden" name="hall_id"
+           value="<?php echo $hall["hall_id"]; ?>">
 
-                <form method="POST">
-                    <input type="hidden" name="hall_id"
-                           value="<?php echo $hall["hall_id"]; ?>">
+    <button type="submit" name="status"
+            value="Approved">Approve</button>
 
-                    <button type="submit" name="status"
-                            value="Approved">Approve</button>
+    <button type="button"
+            onclick="document.getElementById('rejectBox<?php echo $hall['hall_id']; ?>').style.display='block';">
+        Reject
+    </button>
 
-                    <button type="submit" name="status"
-                            value="Rejected">Reject</button>
-                </form>
+    <div id="rejectBox<?php echo $hall['hall_id']; ?>"
+         style="display:none; margin-top:8px;">
+<textarea name="edit_rejection_reason"
+          placeholder="Enter rejection reason"
+          rows="2"
+          required
+          style="width:180px; padding:6px;"></textarea>
+
+<br><br>
+
+        <button type="submit" name="status" value="Rejected">
+            Confirm Rejection
+        </button>
+    </div>
+</form>
 
             <?php } else { ?>
                 —
@@ -273,6 +353,7 @@ echo "Total Halls: " . mysqli_num_rows($result);
 
 </table>
 <h2 class="section-heading">Pending Hall Edit Requests</h2>
+
 <?php while ($request = mysqli_fetch_assoc($edit_result)) { ?>
 
     <div style="border:1px solid #ccc; padding:15px; margin:15px;">
@@ -280,42 +361,123 @@ echo "Total Halls: " . mysqli_num_rows($result);
         <h3><?php echo htmlspecialchars($request["current_hall_name"]); ?></h3>
 
         <p>Requested Hall Name:
+    <?php if ($request["hall_name"] != $request["current_hall_name"]) { ?>
+        <span style="background:#fff3a6; padding:5px; border-radius:4px; font-weight:bold;">
             <?php echo htmlspecialchars($request["hall_name"]); ?>
-        </p>
-        <p>Owner Mobile Number:
-    <a href="tel:<?php echo htmlspecialchars($request["owner_phone"]); ?>">
-        <?php echo htmlspecialchars($request["owner_phone"]); ?>
-    </a>
+        </span>
+    <?php } else { ?>
+        <?php echo htmlspecialchars($request["hall_name"]); ?>
+    <?php } ?>
 </p>
 
-        <p>Requested Place:
-            <?php echo htmlspecialchars($request["location"]); ?>
+        <p>Owner Mobile Number:
+            <a href="tel:<?php echo htmlspecialchars($request["owner_phone"]); ?>">
+                <?php echo htmlspecialchars($request["owner_phone"]); ?>
+            </a>
         </p>
+
+       <p>Requested Place:
+    <?php if ($request["location"] != $request["current_location"]) { ?>
+        <span style="background:#fff3a6; padding:5px; border-radius:4px; font-weight:bold;">
+            <?php echo htmlspecialchars($request["location"]); ?>
+        </span>
+    <?php } else { ?>
+        <?php echo htmlspecialchars($request["location"]); ?>
+    <?php } ?>
+</p>
 
         <p>Requested Capacity:
+    <?php if ($request["capacity"] != $request["current_capacity"]) { ?>
+        <span style="background:#fff3a6; padding:5px; border-radius:4px; font-weight:bold;">
             <?php echo htmlspecialchars($request["capacity"]); ?>
-        </p>
+        </span>
+    <?php } else { ?>
+        <?php echo htmlspecialchars($request["capacity"]); ?>
+    <?php } ?>
+</p>
 
         <p>Requested Price:
+    <?php if ($request["price"] != $request["current_price"]) { ?>
+        <span style="background:#fff3a6; padding:5px; border-radius:4px; font-weight:bold;">
             ₹<?php echo htmlspecialchars($request["price"]); ?>
-        </p>
+        </span>
+    <?php } else { ?>
+        ₹<?php echo htmlspecialchars($request["price"]); ?>
+    <?php } ?>
+</p>
 
         <p>Requested Facilities:
+    <?php if ($request["facilities"] != $request["current_facilities"]) { ?>
+        <span style="background:#fff3a6; padding:5px; border-radius:4px; font-weight:bold;">
             <?php echo htmlspecialchars($request["facilities"]); ?>
-        </p>
+        </span>
+    <?php } else { ?>
+        <?php echo htmlspecialchars($request["facilities"]); ?>
+    <?php } ?>
+</p>
 
-        <p>Requested Description:
+       <p>Requested Description:
+    <?php if ($request["description"] != $request["current_description"]) { ?>
+        <span style="background:#fff3a6; padding:5px; border-radius:4px; font-weight:bold;">
             <?php echo htmlspecialchars($request["description"]); ?>
-        </p>
+        </span>
+    <?php } else { ?>
+        <?php echo htmlspecialchars($request["description"]); ?>
+    <?php } ?>
+</p>
+<p>Requested Hall Image:</p>
+
+<?php if ($request["image"] != $request["current_image"]) { ?>
+
+    <div style="background:#fff3a6; padding:10px;
+                border:2px solid #eab308; border-radius:8px;
+                display:inline-block;">
+
+        <strong>Updated Image</strong><br>
+
+        <img src="<?php echo htmlspecialchars($request["image"]); ?>"
+             width="220"
+             style="margin-top:8px; border-radius:6px;">
+
+    </div>
+
+<?php } else { ?>
+
+    <img src="<?php echo htmlspecialchars($request["image"]); ?>"
+         width="220"
+         style="border-radius:6px;">
+
+    <span> (No image changes)</span>
+
+<?php } ?>
+
         <form method="POST">
+
     <input type="hidden" name="request_id"
-           value="<?php echo $request['request_id']; ?>">
+           value="<?php echo $request["request_id"]; ?>">
 
     <button type="submit" name="edit_action"
-            value="Approved">Approve Changes</button>
+            value="Approved" formnovalidate>
+        Approve Edit
+    </button>
+
+    <br><br>
+
+    <label>Reason for rejection:</label>
+
+    <textarea name="edit_rejection_reason"
+              placeholder="Enter rejection reason"
+              rows="2"
+              required
+              style="width:180px; padding:6px;"></textarea>
+
+    <br><br>
 
     <button type="submit" name="edit_action"
-            value="Rejected">Reject Changes</button>
+            value="Rejected">
+        Reject Edit
+    </button>
+
 </form>
 
     </div>
@@ -336,15 +498,26 @@ echo "Total Halls: " . mysqli_num_rows($result);
         <p>Request Status: Pending</p>
 
         <form method="POST">
-            <input type="hidden" name="delete_request_id"
-                   value="<?php echo $request["request_id"]; ?>">
+    <input type="hidden" name="delete_request_id"
+           value="<?php echo $request["request_id"]; ?>">
 
-            <button type="submit" name="delete_action"
-                    value="Approved">Approve Delete</button>
+    <button type="submit" name="delete_action"
+            value="Approved">Approve Delete</button>
 
-            <button type="submit" name="delete_action"
-                    value="Rejected">Reject Delete</button>
-        </form>
+    <br><br>
+
+    <label>Reason for rejection:</label>
+    <textarea name="delete_rejection_reason"
+          placeholder="Enter rejection reason"
+          rows="2"
+          required
+          style="width:180px; padding:6px;"></textarea>
+
+<br><br>
+
+    <button type="submit" name="delete_action"
+            value="Rejected">Reject Delete</button>
+</form>
 
     </div>
 
